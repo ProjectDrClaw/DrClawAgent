@@ -1,51 +1,52 @@
 ---
 name: QA_source_index
-description: "Maps topics and keywords from user questions to QwenPaw official documentation paths and common source code entry points, reducing blind searching. Intended for the built-in QA Agent to quickly identify which files to read when answering questions about installation, configuration, skills, MCP, multi-agent, memory, CLI, etc."
+description: "Maps topics and keywords from user questions to Dr.Claw documentation paths and common source entry points. Intended for the QA Agent when answering installation, configuration, env vars, OpenIM, CLI, etc."
 metadata:
-  builtin_skill_version: "1.3"
+  builtin_skill_version: "1.4"
   qwenpaw:
     emoji: "🗂️"
     requires: {}
 ---
 
-# Documentation and Source Code Quick Reference
+# Docs and source quick index
 
-When answering questions about **installation, configuration, or behavioral principles**, first **classify by keyword**, then **open 1–2 paths most likely to contain the answer** from the table below, avoiding aimless directory traversal.
+For **install, config, and behavior** questions: classify by keyword, then open **1–2 most likely paths** instead of blind searching.
 
-## Usage Steps
+## Steps
 
-1. Extract the topic from the user's question (match against the left column or synonyms in the table below).
-2. Resolve **`$QWENPAW_ROOT`**: use `which qwenpaw` to get the executable path. If it is `…/.qwenpaw/bin/qwenpaw`, the source root is three levels up (consistent with the **guidance** skill); otherwise, determine it from the user-provided installation path.
-3. Resolve **`$DOCS_DIR`** first (cross-install compatible): run `python3 -c "from qwenpaw.constant import DOCS_DIR; print(DOCS_DIR or '')" 2>/dev/null`. If it returns a valid path, use it directly. Otherwise, fallback to `$DRCLAW_ROOT/docs/`.
-4. **Read documentation first**: `$DOCS_DIR/<topic>.<language>.md` (use the same language as the user: `zh` / `en`.). If that is insufficient, read the **source entry points** listed in the table.
+1. Extract the topic from the user question (left column below).
+2. Resolve **`$DRCLAW_ROOT`**: use `which drclaw` or `which qwenpaw`. If the path is `…/.drclaw/bin/drclaw` (or legacy `.qwenpaw/bin/qwenpaw`), the source root is three levels up (same as **guidance**); otherwise use the path the user provides.
+3. Resolve **`$DOCS_DIR`**: `python3 -c "from qwenpaw.constant import DOCS_DIR; print(DOCS_DIR or '')" 2>/dev/null`. If empty, fallback to `$DRCLAW_ROOT/docs/`.
+4. **Read docs first**, then the listed **source entry points**.
 
-## Topic / Keywords → Preferred Documentation and Source Code
+## Topic → docs and source
 
-| Topic or Keywords (examples) | Preferred Documentation (`$DOCS_DIR/`) | Common Source Entry Points (relative to `$QWENPAW_ROOT`) |
-|---------------------|-----------------------------------|-----------------------------------|
-| Installation, dependencies, getting started | `quickstart`, `intro` | `src/qwenpaw/cli/`, `pyproject.toml` |
-| Configuration, config.json, environment variables | `config` | `src/qwenpaw/config/config.py`, `src/qwenpaw/constant.py` |
-| Skills, SKILL, skill_pool, built-in skills | `skills` | `src/qwenpaw/agents/skill_system/`, `src/qwenpaw/agents/skills/` |
-| MCP, plugins | `mcp` | `src/qwenpaw/app/routers/` (grep `mcp` as needed) |
-| Multi-agent, workspace, agent, built-in QA | `multi-agent` | `src/qwenpaw/app/routers/agents.py`, `src/qwenpaw/app/migration.py`, `src/qwenpaw/constant.py` (`BUILTIN_QA_AGENT_ID`, etc.) |
-| Memory, MEMORY, memory_search | `memory` | `src/qwenpaw/agents/memory/memory_manager.py`, `src/qwenpaw/agents/tools/memory_search.py` |
-| Console, frontend | `console` | `console/` |
-| CLI, subcommands, init | `cli` | `src/qwenpaw/cli/` (e.g., `init_cmd.py`) |
-| Channels, sessions | `channels` | Search for `channels` keyword under `src/qwenpaw` |
-| Context, window | `context` | `config` docs + related logic in `src/qwenpaw/agents/` |
-| Models, API Key | `models` | `src/qwenpaw/config/config.py` |
-| Heartbeat, HEARTBEAT | `heartbeat` | Search for `heartbeat` / `HEARTBEAT` under `src/qwenpaw` |
-| Desktop client | `desktop` | `desktop/` (if present in the repository) |
-| Security | `security` | Read `security.<lang>.md` first |
-| Errors, FAQ | `faq` | Read `faq.<lang>.md` first, then examine source code as needed |
-| Commands and slash commands | `commands` | CLI/command registration modules under `src/qwenpaw` (search as needed) |
+Repo `docs/` is ops-focused. Prefer:
+
+| Topic / keywords | Prefer docs under `$DOCS_DIR/` | Source under `$DRCLAW_ROOT` |
+|------------------|-------------------------------|----------------------------|
+| Install, deps, first run, init | `README.md`, repo `README_zh.md` / `README.md` | `src/qwenpaw/cli/`, `pyproject.toml`, `scripts/install.*` |
+| Config, config.json, env, `DRCLAW_*` | `DRCLAW_ENV_zh.md` | `src/qwenpaw/constant.py`, `src/qwenpaw/env_resolve.py`, `src/qwenpaw/config/config.py` |
+| OpenIM, IM bot, channel setup | `DRCLAW_OPENIM_CHANNEL_zh.md` | `src/qwenpaw/app/channels/openim/` |
+| Customization, migration, branding | `DRCLAW_CUSTOMIZATION_PLAN_zh.md` | follow doc sections |
+| Docs index | `README.md` (in docs/) | `docs/` |
+| Skills, skill_pool | (no dedicated md — read source) | `src/qwenpaw/agents/skill_system/`, `src/qwenpaw/agents/skills/` |
+| MCP, plugins | (no dedicated md — read source) | `src/qwenpaw/app/routers/`, `plugins/` |
+| Multi-agent, workspaces | (no dedicated md — read source) | `src/qwenpaw/app/routers/agents.py`, `src/qwenpaw/app/migration.py` |
+| Memory | (no dedicated md — read source) | `src/qwenpaw/agents/memory/` |
+| Console / frontend | (no dedicated md — read source) | `console/` |
+| CLI, subcommands | `README.md` / `README_zh.md` | `src/qwenpaw/cli/` |
+| Channels, sessions | OpenIM above; else source | `src/qwenpaw/app/channels/` |
+| Models, API keys | `DRCLAW_ENV_zh.md` + source | `src/qwenpaw/providers/`, `src/qwenpaw/config/config.py` |
+| Desktop / Tauri | (no dedicated md — read source) | `console/src-tauri/`, `scripts/pack-tauri/` |
 
 ## Conventions
 
-- Full documentation path: `$DOCS_DIR/<topic>.<language>.md` (fall back to `.en.md` if the corresponding language file does not exist). Prefer `DOCS_DIR` from `qwenpaw.constant`; fallback to `$DRCLAW_ROOT/docs/`.
-- The **source entry points** in the table are starting points; use `read_file` or targeted `grep` to narrow down to specific symbols — do not read through an entire large directory listing at once.
+- Prefer `DOCS_DIR` from `qwenpaw.constant`; fallback `$DRCLAW_ROOT/docs/`.
+- CLI is **`drclaw`** (Python package name remains `qwenpaw`); data dir prefers **`~/.drclaw`** (`DRCLAW_WORKING_DIR`).
+- Source paths are starting points — `read_file` / targeted `grep` next.
 
 ## Notes
 
-- This skill **does not replace** `read_file`: after identifying candidate paths, you should immediately read and verify the content.
-- If a path does not exist locally (e.g., an installation tree without source code), use the **installed documentation package** or the root directory provided by the user, and clearly state which path you are relying on.
+- This skill does **not** replace `read_file`.
+- If a path is missing locally, say so and use installed docs or a user-provided root.

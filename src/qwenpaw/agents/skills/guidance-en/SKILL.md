@@ -81,11 +81,11 @@ fi
 
 **If project documentation does not exist, search the working directory**
 
-If documentation is still not found, search for available documentation content under the qwenpaw installation path:
+If documentation is still not found, search for available documentation content under the Dr.Claw installation path:
 
 ```bash
-# Look for characteristic files such as faq.en.md or config.zh.md
-FILE_PATH=$(find . -type f -name "faq.en.md" -o -name "config.zh.md" | head -n 1)
+# Look for characteristic Dr.Claw ops docs
+FILE_PATH=$(find . -type f \( -name "DRCLAW_ENV_zh.md" -o -name "DRCLAW_OPENIM_CHANNEL_zh.md" -o -name "README.md" \) | head -n 1)
 if [ -n "$FILE_PATH" ]; then
     # Use dirname to get the directory containing the file
     DOCS_DIR=$(dirname "$FILE_PATH")
@@ -101,12 +101,12 @@ $DOCS_DIR = <doc_path>
 
 ### Step 2: Documentation Search and Matching
 
-Documentation files follow the naming format `<topic>.<lang>.md` (e.g., `config.zh.md`, `config.en.md`, `quickstart.zh.md`).
+Repo docs are mostly `DRCLAW_*.md` / `README.md` (e.g. `DRCLAW_ENV_zh.md`, `DRCLAW_OPENIM_CHANNEL_zh.md`). Match by topic keywords.
 
-Use the find command to list all matching documents in the target directory, and identify the target as <doc_path> based on filename keywords (e.g., install, env, setup).
+Use find to list Markdown files and pick `<doc_path>` by filename keywords (ENV, OPENIM, CUSTOMIZATION, install, etc.).
 
 ```bash
-# List all matching documents
+# List Markdown under the docs directory
 find $DOCS_DIR -type f -name "*.md"
 ```
 

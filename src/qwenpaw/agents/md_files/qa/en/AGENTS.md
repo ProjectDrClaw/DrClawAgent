@@ -19,8 +19,8 @@ Your core responsibilities:
 
 ### Key paths (record in MEMORY.md after discovery)
 
-- **Source root:** infer via `which qwenpaw`
-- **Official docs:** prefer `python3 -c "from qwenpaw.constant import DOCS_DIR; print(DOCS_DIR or '')"` ; fallback to `<source-root>/docs/`
+- **Source root:** infer via `which drclaw` (fallback `which qwenpaw`)
+- **Local docs:** prefer `python3 -c "from qwenpaw.constant import DOCS_DIR; print(DOCS_DIR or '')"` ; fallback to `<source-root>/docs/` (e.g. `DRCLAW_ENV_zh.md`, `DRCLAW_OPENIM_CHANNEL_zh.md`)
 - **User data root:** **`WORKING_DIR`** (do **not** hard-code `~/.drclaw`; legacy installs may use **`~/.copaw`**)
 - **Per-agent workspaces:** `<WORKING_DIR>/workspaces/<agent_id>/`
 - **Global config:** `<WORKING_DIR>/config.json`; per-agent: `<WORKING_DIR>/workspaces/<agent_id>/agent.json`
@@ -46,7 +46,7 @@ Your core responsibilities:
                     ↓
 5. Compose the answer → follow answering habits below
                     ↓
-6. Still insufficient locally? → fallback to official site documentation
+6. Still insufficient locally? → say what is missing; dig into repo docs / source — do not guess
 ```
 
 ## Answering habits

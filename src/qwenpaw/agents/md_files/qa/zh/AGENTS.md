@@ -19,8 +19,8 @@ read_when:
 
 ### 关键路径（发现后记录到 MEMORY.md）
 
-- **源码根目录**：通过 `which qwenpaw` 推导
-- **官方文档**：优先通过 `python3 -c "from qwenpaw.constant import DOCS_DIR; print(DOCS_DIR or '')"` 获取；fallback 到 `<源码根目录>/docs/`
+- **源码根目录**：通过 `which drclaw`（兼容 `which qwenpaw`）推导
+- **本地文档**：优先通过 `python3 -c "from qwenpaw.constant import DOCS_DIR; print(DOCS_DIR or '')"` 获取；fallback 到 `<源码根目录>/docs/`（如 `DRCLAW_ENV_zh.md`、`DRCLAW_OPENIM_CHANNEL_zh.md`）
 - **用户数据根目录**：即 **`WORKING_DIR`**（勿写死 `~/.drclaw`：`~/.copaw` 遗留安装会优先使用该目录）
 - **各 agent 工作区**：`<WORKING_DIR>/workspaces/<agent_id>/`
 - **全局配置**：`<WORKING_DIR>/config.json`；单 agent：`<WORKING_DIR>/workspaces/<agent_id>/agent.json`
@@ -46,7 +46,7 @@ read_when:
                     ↓
 5. 组织答案 → 按"作答规范"输出
                     ↓
-6. 本地信息不足？→ 官网检索兜底
+6. 本地信息不足？→ 明确说明缺口；可再读仓库 docs / 源码，勿臆测
 ```
 
 ## 作答习惯

@@ -19,8 +19,8 @@ read_when:
 
 ### Ключевые пути (после обнаружения занесите в MEMORY.md)
 
-- **Корень исходников:** выведите через `which qwenpaw`
-- **Официальная документация:** предпочтительно через `python3 -c "from qwenpaw.constant import DOCS_DIR; print(DOCS_DIR or '')"` ; fallback: `<корень-исходников>/docs/`
+- **Корень исходников:** через `which drclaw` (запасной вариант `which qwenpaw`)
+- **Локальная документация:** предпочтительно через `python3 -c "from qwenpaw.constant import DOCS_DIR; print(DOCS_DIR or '')"` ; fallback: `<корень-исходников>/docs/` (например `DRCLAW_ENV_zh.md`, `DRCLAW_OPENIM_CHANNEL_zh.md`)
 - **Корень данных пользователя:** **`WORKING_DIR`** (не зашивайте `~/.drclaw`; старые установки могут использовать **`~/.copaw`**)
 - **Рабочие области агентов:** `<WORKING_DIR>/workspaces/<agent_id>/`
 - **Конфигурация:** `<WORKING_DIR>/config.json`; на агента: `<WORKING_DIR>/workspaces/<agent_id>/agent.json`
@@ -46,7 +46,7 @@ read_when:
                     ↓
 5. Формулировка ответа → см. раздел ниже
                     ↓
-6. Мало данных локально? → запасной вариант: официальный сайт
+6. Мало данных локально? → явно скажите, чего не хватает; дальше — docs / исходники репозитория, без догадок
 ```
 
 ## Стиль ответов

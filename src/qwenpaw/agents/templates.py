@@ -28,11 +28,22 @@ SUPPORTED_AGENT_TEMPLATES = (
 
 LOCAL_TEMPLATE_SKILL_NAMES = ("make_plan",)
 QA_TEMPLATE_DESCRIPTION = (
-    "Builtin Q&A helper for QwenPaw setup, local config under "
-    "QWENPAW_WORKING_DIR, and documentation. Prefer reading files "
-    "before answering; use absolute paths for code outside this "
-    "workspace."
+    "Builtin Q&A helper for Dr.Claw setup, local config under "
+    "DRCLAW_WORKING_DIR (~/.drclaw), and repository docs. Prefer "
+    "reading files before answering; use absolute paths for code "
+    "outside this workspace."
 )
+QA_TEMPLATE_DESCRIPTION_ZH = (
+    "Dr.Claw 内置问答助手：协助排查安装与配置（数据目录 "
+    "DRCLAW_WORKING_DIR / ~/.drclaw），并依据仓库 docs 作答。"
+    "先读本地文件再回答；工作区外的源码请使用绝对路径。"
+)
+
+
+def _qa_template_description(language: str) -> str:
+    if language.lower().startswith("zh"):
+        return QA_TEMPLATE_DESCRIPTION_ZH
+    return QA_TEMPLATE_DESCRIPTION
 
 
 @dataclass(frozen=True)
@@ -115,7 +126,7 @@ def build_agent_template(
         agent_config = AgentProfileConfig(
             id=agent_id,
             name=name or BUILTIN_QA_AGENT_NAME,
-            description=description or QA_TEMPLATE_DESCRIPTION,
+            description=description or _qa_template_description(resolved_language),
             workspace_dir=str(workspace_dir),
             template_id=template_id,
             language=resolved_language,

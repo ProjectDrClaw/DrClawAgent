@@ -84,8 +84,8 @@ fi
 如果还是找不到文档，搜索 drclaw 安装路径下的可用文档内容：
 
 ```bash
-# 寻找 faq.en.md 或 config.zh.md 等特征文件
-FILE_PATH=$(find . -type f -name "faq.en.md" -o -name "config.zh.md" | head -n 1)
+# 寻找 Dr.Claw 运维文档特征文件
+FILE_PATH=$(find . -type f \( -name "DRCLAW_ENV_zh.md" -o -name "DRCLAW_OPENIM_CHANNEL_zh.md" -o -name "README.md" \) | head -n 1)
 if [ -n "$FILE_PATH" ]; then
     # 使用 dirname 获取该文件所在的目录
     DOCS_DIR=$(dirname "$FILE_PATH")
@@ -100,12 +100,12 @@ $DOCS_DIR = <doc_path>
 
 ### 第二步：文档检索与匹配
 
-文档文件命名格式为 `<topic>.<lang>.md`（如 `config.zh.md`、`config.en.md`、`quickstart.zh.md`）。
+当前仓库文档多为 `DRCLAW_*.md` / `README.md`（例如 `DRCLAW_ENV_zh.md`、`DRCLAW_OPENIM_CHANNEL_zh.md`），按主题关键词匹配即可。
 
-使用 find 命令在目标目录中列出所有符合后缀的文档，并根据文件名关键字（如 install, env, setup）锁定目标作为 <doc_path>。
+使用 find 命令在目标目录中列出文档，并根据文件名关键字（如 ENV、OPENIM、CUSTOMIZATION、install）锁定目标作为 <doc_path>。
 
 ```bash
-# 列出所有符合后缀的文档
+# 列出文档目录下的 Markdown
 find $DOCS_DIR -type f -name "*.md"
 ```
 

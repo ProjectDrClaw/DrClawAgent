@@ -170,8 +170,8 @@ JOBS_FILE = EnvVarLoader.get_str("DRCLAW_JOBS_FILE", "jobs.json")
 CHATS_FILE = EnvVarLoader.get_str("DRCLAW_CHATS_FILE", "chats.json")
 
 
-# Builtin Q&A helper profile.  agent_id keeps "QwenPaw" prefix for existing
-# workspaces and agent.json; do not rename.
+# Builtin Q&A helper profile. agent_id is stable for existing workspaces
+# and agent.json; do not rename lightly.
 def _discover_agent_languages() -> frozenset[str]:
     md_root = Path(__file__).resolve().parent / "agents" / "md_files"
     if md_root.is_dir():
