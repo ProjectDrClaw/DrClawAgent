@@ -32,6 +32,7 @@ from .windows_sandbox import (
     _decode_pipe_output,
     _get_python_install_dir,
     _is_admin,
+    _working_state_dir,
 )
 
 logger = logging.getLogger(__name__)
@@ -2412,9 +2413,7 @@ class _SandboxInstance:
 
 # ── Module-level state ──
 
-_sandbox_state_dir = (
-    Path(os.environ.get("USERPROFILE", os.path.expanduser("~"))) / ".qwenpaw"
-)
+_sandbox_state_dir = _working_state_dir()
 
 
 def _find_reusable_sandbox(

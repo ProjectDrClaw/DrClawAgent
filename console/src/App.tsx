@@ -26,8 +26,6 @@ import MainLayout from "./layouts/MainLayout";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { PluginProvider, usePlugins } from "./plugins/PluginContext";
 import { ApprovalProvider } from "./contexts/ApprovalContext";
-import { DesktopUpdateProvider } from "./contexts/DesktopUpdateContext";
-import { UpdateTakeoverGate } from "./components/UpdateTakeoverPage";
 import { Suspense } from "react";
 import { lazyImportWithRetry } from "./utils/lazyWithRetry";
 
@@ -205,30 +203,26 @@ function AppInner() {
       >
         <AntdApp>
           <CloseWindowPrompt />
-          <DesktopUpdateProvider>
-            <UpdateTakeoverGate>
-              <ApprovalProvider>
-                <Routes>
-                  <Route
-                    path="/login"
-                    element={
-                      <Suspense fallback={null}>
-                        <LoginPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="/*"
-                    element={
-                      <AuthGuard>
-                        <MainLayout />
-                      </AuthGuard>
-                    }
-                  />
-                </Routes>
-              </ApprovalProvider>
-            </UpdateTakeoverGate>
-          </DesktopUpdateProvider>
+          <ApprovalProvider>
+            <Routes>
+              <Route
+                path="/login"
+                element={
+                  <Suspense fallback={null}>
+                    <LoginPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/*"
+                element={
+                  <AuthGuard>
+                    <MainLayout />
+                  </AuthGuard>
+                }
+              />
+            </Routes>
+          </ApprovalProvider>
         </AntdApp>
       </ConfigProvider>
     </BrowserRouter>

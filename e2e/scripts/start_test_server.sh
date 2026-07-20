@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Start an isolated QwenPaw backend for local E2E testing.
+# Start an isolated Dr.Claw backend for local E2E testing.
 #
 # Usage:
 #   ./e2e/scripts/start_test_server.sh          # foreground
 #   ./e2e/scripts/start_test_server.sh --bg      # background (writes PID file)
 #
 # The instance uses a dedicated working directory and port so it never
-# touches your personal QwenPaw data at ~/.qwenpaw.
+# touches your personal Dr.Claw data at ~/.drclaw.
 #
 # Stop with:  ./e2e/scripts/stop_test_server.sh
 #        or:  Ctrl-C (foreground mode)
@@ -14,12 +14,12 @@
 set -euo pipefail
 
 # ── Config ──────────────────────────────────────────────────────────
-E2E_PORT="${QWENPAW_E2E_PORT:-7077}"
-E2E_ROOT="/tmp/qwenpaw-e2e-test-work-dir"
+E2E_PORT="${DRCLAW_E2E_PORT:-${QWENPAW_E2E_PORT:-7077}}"
+E2E_ROOT="/tmp/drclaw-e2e-test-work-dir"
 E2E_WORKING_DIR="${E2E_ROOT}/working"
 E2E_SECRET_DIR="${E2E_ROOT}/secret"
 E2E_BACKUP_DIR="${E2E_ROOT}/backups"
-PID_FILE="${E2E_ROOT}/qwenpaw-e2e.pid"
+PID_FILE="${E2E_ROOT}/drclaw-e2e.pid"
 
 # ── Prepare dirs ────────────────────────────────────────────────────
 mkdir -p "$E2E_WORKING_DIR" "$E2E_SECRET_DIR" "$E2E_BACKUP_DIR"
@@ -32,13 +32,17 @@ if lsof -i :"$E2E_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "Starting isolated QwenPaw for E2E testing..."
+echo "Starting isolated Dr.Claw for E2E testing..."
 echo "  Port:        $E2E_PORT"
 echo "  Working dir: $E2E_WORKING_DIR"
 echo "  PID file:    $PID_FILE"
 echo ""
 
-# ── Export env ──────────────────────────────────────────────────────
+# ── Export env（优先 DRCLAW_*，同步导出 QWENPAW_* 兼容旧 harness）──
+export DRCLAW_WORKING_DIR="$E2E_WORKING_DIR"
+export DRCLAW_SECRET_DIR="$E2E_SECRET_DIR"
+export DRCLAW_BACKUP_DIR="$E2E_BACKUP_DIR"
+export DRCLAW_AUTH_ENABLED=false
 export QWENPAW_WORKING_DIR="$E2E_WORKING_DIR"
 export QWENPAW_SECRET_DIR="$E2E_SECRET_DIR"
 export QWENPAW_BACKUP_DIR="$E2E_BACKUP_DIR"

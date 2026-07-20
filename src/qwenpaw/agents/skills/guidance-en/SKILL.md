@@ -1,6 +1,6 @@
 ---
 name: guidance
-description: "Answer user questions about QwenPaw installation and configuration: first locate and read local documentation, then distill the answer; if local information is insufficient, fall back to the official website documentation."
+description: "Answer user questions about Dr.Claw installation and configuration: first locate and read local documentation, then distill the answer; if local information is insufficient, fall back to the official website documentation."
 metadata:
   builtin_skill_version: "1.3"
   qwenpaw:
@@ -8,9 +8,9 @@ metadata:
     requires: {}
 ---
 
-# QwenPaw Installation and Configuration Q&A Guide
+# Dr.Claw Installation and Configuration Q&A Guide
 
-Use this skill when the user asks about **QwenPaw installation, initialization, environment configuration, dependency requirements, or common configuration options**.
+Use this skill when the user asks about **Dr.Claw installation, initialization, environment configuration, dependency requirements, or common configuration options**.
 
 Core principles:
 
@@ -38,44 +38,44 @@ First, check whether there is a documentation directory in memory. If found, use
 
 ```bash
 # Get the documentation directory from memory
-DOCS_DIR=$(find ~/.qwenpaw/memory/ -type d -name "docs")
+DOCS_DIR=$(find ~/.drclaw/memory/ -type d -name "docs")
 ```
 
 If there is no documentation directory in memory, continue with the following logic.
 
 **Check the documentation directory in the project source code**
 
-Run the following script logic to obtain the variable $QWENPAW_ROOT:
+Run the following script logic to obtain the variable $DRCLAW_ROOT:
 
 ```bash
 # Get the absolute path of the binary
-QWENPAW_PATH=$(which qwenpaw 2>/dev/null || whereis qwenpaw | awk '{print $2}')
+DRCLAW_PATH=$(which drclaw 2>/dev/null || whereis drclaw | awk '{print $2}')
 
-# Logical deduction: if the path contains .qwenpaw/bin/qwenpaw, the root is three levels up
-# Example: /path/to/QwenPaw/.qwenpaw/bin/qwenpaw -> /path/to/QwenPaw
-if [[ "$QWENPAW_PATH" == *".qwenpaw/bin/qwenpaw" ]]; then
-    QWENPAW_ROOT=$(echo "$QWENPAW_PATH" | sed 's/\/\.qwenpaw\/bin\/qwenpaw//')
+# Logical deduction: if the path contains .drclaw/bin/drclaw, the root is three levels up
+# Example: /path/to/Dr.Claw/.drclaw/bin/drclaw -> /path/to/Dr.Claw
+if [[ "$DRCLAW_PATH" == *".drclaw/bin/drclaw" ]]; then
+    DRCLAW_ROOT=$(echo "$DRCLAW_PATH" | sed 's/\/\.drclaw\/bin\/drclaw//')
 else
     # Fallback: try to get the parent of the parent directory
-    QWENPAW_ROOT=$(dirname $(dirname "$QWENPAW_PATH") 2>/dev/null || echo ".")
+    DRCLAW_ROOT=$(dirname $(dirname "$DRCLAW_PATH") 2>/dev/null || echo ".")
 fi
 
-echo "Detected QwenPaw Root: $QWENPAW_ROOT"
+echo "Detected Dr.Claw Root: $DRCLAW_ROOT"
 ```
 
 Verify and list the documentation directory:
-Use the derived $QWENPAW_ROOT to locate the documentation:
+Use the derived $DRCLAW_ROOT to locate the documentation:
 
 ```bash
 # Construct the standard documentation path
-DOCS_DIR="$QWENPAW_ROOT/website/public/docs/"
+DOCS_DIR="$DRCLAW_ROOT/docs/"
 
 # Check if the path exists and list files
 if [ -d "$DOCS_DIR" ]; then
     find "$DOCS_DIR" -type f -name "*.md" | head -n 100
 else
     # If the derived path is incorrect, perform a global fuzzy search
-    find "$QWENPAW_ROOT" -type d -name "docs" | grep "website/public/docs"
+    find "$DRCLAW_ROOT" -type d -name "docs" | grep "docs"
 fi
 ```
 
@@ -131,13 +131,13 @@ Extract key information from the documentation and organize it into an actionabl
 
 Language requirement: the answer language must match the language of the user's question (answer in Chinese if asked in Chinese, answer in English if asked in English).
 
-### Step 5 (Optional): Official Website Lookup
+### Step 5 (Optional): Repository Docs Lookup
 
-If the previous steps cannot be completed (no local documentation, missing documentation, or insufficient information), use the official website as a fallback:
+If the previous steps cannot be completed (no local documentation, missing documentation, or insufficient information), use the repository docs as a fallback:
 
-- http://qwenpaw.agentscope.io/
+- https://github.com/ProjectDrClaw/DrClawAgent/tree/main/docs
 
-Answer based on the content available from the official website, and clearly state in the answer that the conclusion comes from the official website documentation.
+Answer based on the content available there, and clearly state in the answer that the conclusion comes from repository documentation.
 
 ## Output Quality Requirements
 

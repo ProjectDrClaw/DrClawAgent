@@ -29,11 +29,11 @@ THEME_GALLERY: tuple[ThemeInfo, ...] = (
         "Original",
         "🐾",
         "original",
-        # Warm, dark take on QwenPaw's console palette (brand orange #ff7f16).
+        # Warm, dark take on QwenPaw's console palette (brand orange #2657C9).
         "#1d1308",
         "#2c1d0e",
         "#5a3614",
-        "#ff7f16",
+        "#2657C9",
     ),
     ThemeInfo(
         "funky",

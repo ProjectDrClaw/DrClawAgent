@@ -3,7 +3,6 @@
 mod backend;
 mod backend_download;
 mod external_link;
-mod updates;
 mod tray;
 
 use tauri::{Manager, RunEvent, WebviewWindow, WindowEvent};
@@ -22,11 +21,6 @@ pub fn run() {
     let build_result = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(
-            tauri_plugin_updater::Builder::new()
-                .default_version_comparator(updates::is_remote_update_newer)
-                .build(),
-        )
         .invoke_handler(tauri::generate_handler![
             open_devtools,
             backend_download::download_backend_file,
@@ -35,11 +29,6 @@ pub fn run() {
             backend::backend_startup_error,
             backend::restart_backend,
             external_link::open_external_link,
-            updates::check_desktop_update,
-            updates::install_desktop_update,
-            updates::download_desktop_update,
-            updates::install_downloaded_update,
-            updates::check_cached_update,
             tray::minimize_to_tray,
             tray::quit_app,
             tray::set_tray_labels,

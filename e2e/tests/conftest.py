@@ -35,8 +35,16 @@ def pytest_sessionstart(session):
     _ = config.working_dir  # raises RuntimeError on misconfiguration
 
 
-_DEFAULT_PROVIDER = os.getenv("QWENPAW_MODEL_PROVIDER", "dashscope")
-_DEFAULT_MODEL = os.getenv("QWENPAW_DEFAULT_MODEL", "qwen3.6-plus")
+_DEFAULT_PROVIDER = (
+    os.getenv("DRCLAW_MODEL_PROVIDER")
+    or os.getenv("QWENPAW_MODEL_PROVIDER")
+    or "dashscope"
+)
+_DEFAULT_MODEL = (
+    os.getenv("DRCLAW_DEFAULT_MODEL")
+    or os.getenv("QWENPAW_DEFAULT_MODEL")
+    or "qwen3.6-plus"
+)
 
 _SEED_FILE_NAME = "_e2e_test_note.md"
 _SEED_FILE_CONTENT = "# E2E Test Note\n\nThis file was created by the E2E test framework.\n"
@@ -54,10 +62,13 @@ Placeholder skill for E2E tests.
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_default_model(api_context):
-    """Configure provider API key and set a global default model when QWENPAW_DASHSCOPE_API_KEY is set."""
-    model_key = os.getenv("QWENPAW_DASHSCOPE_API_KEY")
+    """配置默认模型；优先 DRCLAW_DASHSCOPE_API_KEY，兼容 QWENPAW_*。"""
+    model_key = (
+        os.getenv("DRCLAW_DASHSCOPE_API_KEY")
+        or os.getenv("QWENPAW_DASHSCOPE_API_KEY")
+    )
     if not model_key:
-        logger.info("QWENPAW_DASHSCOPE_API_KEY not set, skipping model setup")
+        logger.info("DRCLAW_DASHSCOPE_API_KEY not set, skipping model setup")
         yield
         return
 

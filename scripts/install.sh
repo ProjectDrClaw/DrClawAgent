@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# QwenPaw Installer
+# Dr.Claw Installer
 # Usage: curl -fsSL <url>/install.sh | bash
 #    or: bash install.sh [--version X.Y.Z] [--from-source]
 #
-# Installs QwenPaw into ~/.qwenpaw with a uv-managed Python environment.
+# Installs Dr.Claw into ~/.drclaw with a uv-managed Python environment.
 # Users do NOT need Python pre-installed — uv handles everything.
 set -euo pipefail
 
@@ -18,17 +18,26 @@ else
     BOLD="" GREEN="" YELLOW="" RED="" RESET=""
 fi
 
-info()  { printf "${GREEN}[qwenpaw]${RESET} %s\n" "$*"; }
-warn()  { printf "${YELLOW}[qwenpaw]${RESET} %s\n" "$*"; }
-error() { printf "${RED}[qwenpaw]${RESET} %s\n" "$*" >&2; }
+info()  { printf "${GREEN}[drclaw]${RESET} %s\n" "$*"; }
+warn()  { printf "${YELLOW}[drclaw]${RESET} %s\n" "$*"; }
+error() { printf "${RED}[drclaw]${RESET} %s\n" "$*" >&2; }
 die()   { error "$@"; exit 1; }
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
-QWENPAW_HOME="${QWENPAW_HOME:-$HOME/.qwenpaw}"
-QWENPAW_VENV="$QWENPAW_HOME/venv"
-QWENPAW_BIN="$QWENPAW_HOME/bin"
+# 安装目录优先级：DRCLAW_HOME > QWENPAW_HOME > COPAW_HOME > ~/.drclaw
+if [ -n "${DRCLAW_HOME:-}" ]; then
+    :
+elif [ -n "${QWENPAW_HOME:-}" ]; then
+    DRCLAW_HOME="$QWENPAW_HOME"
+elif [ -n "${COPAW_HOME:-}" ]; then
+    DRCLAW_HOME="$COPAW_HOME"
+else
+    DRCLAW_HOME="$HOME/.drclaw"
+fi
+DRCLAW_VENV="$DRCLAW_HOME/venv"
+DRCLAW_BIN="$DRCLAW_HOME/bin"
 PYTHON_VERSION="3.12"
-QWENPAW_REPO="https://github.com/agentscope-ai/QwenPaw.git"
+DRCLAW_REPO="https://github.com/ProjectDrClaw/DrClawAgent.git"
 
 # New: Intelligent selection of PyPI source (automatically using Alibaba Cloud mirror for domestic users, and official source for overseas users)
 choose_pypi_mirror() {
@@ -74,7 +83,7 @@ while [[ $# -gt 0 ]]; do
             PRERELEASE=true; shift ;;
         -h|--help)
             cat <<EOF
-QwenPaw Installer
+Dr.Claw Installer
 
 Usage: bash install.sh [OPTIONS]
 
@@ -88,7 +97,8 @@ Options:
   -h, --help            Show this help
 
 Environment:
-  QWENPAW_HOME        Installation directory (default: ~/.qwenpaw)
+  DRCLAW_HOME         Installation directory (default: ~/.drclaw)
+                      Also accepts QWENPAW_HOME / COPAW_HOME for compatibility
 EOF
             exit 0 ;;
         *)
@@ -103,7 +113,7 @@ case "$OS" in
     *) die "Unsupported OS: $OS. This installer supports Linux and macOS only." ;;
 esac
 
-printf "${GREEN}[qwenpaw]${RESET} Installing QwenPaw into ${BOLD}%s${RESET}\n" "$QWENPAW_HOME"
+printf "${GREEN}[drclaw]${RESET} Installing Dr.Claw into ${BOLD}%s${RESET}\n" "$DRCLAW_HOME"
 
 # ── Step 1: Ensure uv is available ───────────────────────────────────────────
 ensure_uv() {
@@ -138,17 +148,17 @@ ensure_uv() {
 ensure_uv
 
 # ── Step 2: Create / update virtual environment ──────────────────────────────
-if [ -d "$QWENPAW_VENV" ]; then
+if [ -d "$DRCLAW_VENV" ]; then
     info "Existing environment found, upgrading..."
 else
     info "Creating Python $PYTHON_VERSION environment..."
 fi
 
-uv venv "$QWENPAW_VENV" --python "$PYTHON_VERSION" --quiet
+uv venv "$DRCLAW_VENV" --python "$PYTHON_VERSION" --quiet
 
 # Verify the venv was created
-[ -x "$QWENPAW_VENV/bin/python" ] || die "Failed to create virtual environment"
-info "Python environment ready ($("$QWENPAW_VENV/bin/python" --version))"
+[ -x "$DRCLAW_VENV/bin/python" ] || die "Failed to create virtual environment"
+info "Python environment ready ($("$DRCLAW_VENV/bin/python" --version))"
 
 # ── Step 3: Install QwenPaw ────────────────────────────────────────────────────
 # Build extras suffix: "" or "[dev,whisper]"
@@ -221,7 +231,7 @@ cleanup_console() {
 _DOCS_COPIED=0
 prepare_docs() {
     local repo_dir="$1"
-    local docs_src="$repo_dir/website/public/docs"
+    local docs_src="$repo_dir/docs"
     local docs_dest="$repo_dir/src/qwenpaw/docs"
 
     if [ -d "$docs_dest" ] && ls "$docs_dest"/*.md >/dev/null 2>&1; then
@@ -244,22 +254,22 @@ cleanup_docs() {
 
 if [ "$FROM_SOURCE" = true ]; then
     if [ -n "$SOURCE_DIR" ]; then
-        info "Installing QwenPaw from local source: $SOURCE_DIR"
+        info "Installing Dr.Claw from local source: $SOURCE_DIR"
         prepare_console "$SOURCE_DIR"
         prepare_docs "$SOURCE_DIR"
         info "Installing package from source..."
-        uv pip install "${SOURCE_DIR}${EXTRAS_SUFFIX}" --python "$QWENPAW_VENV/bin/python" --index-url "$PYPI_MIRROR"
+        uv pip install "${SOURCE_DIR}${EXTRAS_SUFFIX}" --python "$DRCLAW_VENV/bin/python" --index-url "$PYPI_MIRROR"
         cleanup_console "$SOURCE_DIR"
         cleanup_docs "$SOURCE_DIR"
     else
-        info "Installing QwenPaw from source (GitHub)..."
+        info "Installing Dr.Claw from source (GitHub)..."
         CLONE_DIR="$(mktemp -d)"
         trap 'rm -rf "$CLONE_DIR"' EXIT
-        git clone --depth 1 "$QWENPAW_REPO" "$CLONE_DIR"
+        git clone --depth 1 "$DRCLAW_REPO" "$CLONE_DIR"
         prepare_console "$CLONE_DIR"
         prepare_docs "$CLONE_DIR"
         info "Installing package from source..."
-        uv pip install "${CLONE_DIR}${EXTRAS_SUFFIX}" --python "$QWENPAW_VENV/bin/python" --index-url "$PYPI_MIRROR"
+        uv pip install "${CLONE_DIR}${EXTRAS_SUFFIX}" --python "$DRCLAW_VENV/bin/python" --index-url "$PYPI_MIRROR"
         # CLONE_DIR is cleaned up by trap; no need for cleanup_console/cleanup_docs
     fi
 else
@@ -274,55 +284,77 @@ else
     fi
 
     info "Installing ${PACKAGE}${EXTRAS_SUFFIX} from PyPI..."
-    uv pip install "${PACKAGE}${EXTRAS_SUFFIX}" --python "$QWENPAW_VENV/bin/python" --quiet --index-url "$PYPI_MIRROR" --refresh-package qwenpaw ${PRERELEASE_ARGS[@]+"${PRERELEASE_ARGS[@]}"}
+    uv pip install "${PACKAGE}${EXTRAS_SUFFIX}" --python "$DRCLAW_VENV/bin/python" --quiet --index-url "$PYPI_MIRROR" --refresh-package qwenpaw ${PRERELEASE_ARGS[@]+"${PRERELEASE_ARGS[@]}"}
 fi
 
 # Verify the CLI entry point exists
-[ -x "$QWENPAW_VENV/bin/qwenpaw" ] || die "Installation failed: qwenpaw CLI not found in venv"
-info "QwenPaw installed successfully"
+[ -x "$DRCLAW_VENV/bin/drclaw" ] || [ -x "$DRCLAW_VENV/bin/qwenpaw" ] || die "Installation failed: drclaw CLI not found in venv"
+info "Dr.Claw installed successfully"
 
 # Check console availability (for PyPI installs, check the installed package)
 if [ "$_CONSOLE_AVAILABLE" = 0 ]; then
     # Check if console assets were included in the installed package
-    CONSOLE_CHECK="$("$QWENPAW_VENV/bin/python" -c "import importlib.resources, qwenpaw; p=importlib.resources.files('qwenpaw')/'console'/'index.html'; print('yes' if p.is_file() else 'no')" 2>/dev/null || echo 'no')"
+    CONSOLE_CHECK="$("$DRCLAW_VENV/bin/python" -c "import importlib.resources, qwenpaw; p=importlib.resources.files('qwenpaw')/'console'/'index.html'; print('yes' if p.is_file() else 'no')" 2>/dev/null || echo 'no')"
     if [ "$CONSOLE_CHECK" = "yes" ]; then
         _CONSOLE_AVAILABLE=1
     fi
 fi
 
 # ── Step 4: Create wrapper script ────────────────────────────────────────────
-mkdir -p "$QWENPAW_BIN"
+mkdir -p "$DRCLAW_BIN"
 
-cat > "$QWENPAW_BIN/qwenpaw" << 'WRAPPER'
+# 主入口 drclaw；兼容保留 qwenpaw / copaw 同名包装
+_create_cli_wrapper() {
+    local name="$1"
+    cat > "$DRCLAW_BIN/$name" << 'WRAPPER'
 #!/usr/bin/env bash
-# QwenPaw CLI wrapper — delegates to the uv-managed environment.
+# Dr.Claw CLI wrapper — delegates to the uv-managed environment.
 set -euo pipefail
 
-QWENPAW_HOME="${QWENPAW_HOME:-$HOME/.qwenpaw}"
-REAL_BIN="$QWENPAW_HOME/venv/bin/qwenpaw"
+if [ -n "${DRCLAW_HOME:-}" ]; then
+    :
+elif [ -n "${QWENPAW_HOME:-}" ]; then
+    DRCLAW_HOME="$QWENPAW_HOME"
+elif [ -n "${COPAW_HOME:-}" ]; then
+    DRCLAW_HOME="$COPAW_HOME"
+else
+    DRCLAW_HOME="$HOME/.drclaw"
+fi
 
-if [ ! -x "$REAL_BIN" ]; then
-    echo "Error: QwenPaw environment not found at $QWENPAW_HOME/venv" >&2
+REAL_BIN=""
+for cand in drclaw qwenpaw copaw; do
+    if [ -x "$DRCLAW_HOME/venv/bin/$cand" ]; then
+        REAL_BIN="$DRCLAW_HOME/venv/bin/$cand"
+        break
+    fi
+done
+
+if [ -z "$REAL_BIN" ]; then
+    echo "Error: Dr.Claw environment not found at $DRCLAW_HOME/venv" >&2
     echo "Please reinstall: curl -fsSL <install-url> | bash" >&2
     exit 1
 fi
 
 exec "$REAL_BIN" "$@"
 WRAPPER
+    chmod +x "$DRCLAW_BIN/$name"
+}
 
-chmod +x "$QWENPAW_BIN/qwenpaw"
-info "Wrapper created at $QWENPAW_BIN/qwenpaw"
+_create_cli_wrapper "drclaw"
+_create_cli_wrapper "qwenpaw"
+_create_cli_wrapper "copaw"
+info "Wrapper created at $DRCLAW_BIN/drclaw"
 
 # ── Step 5: Update PATH in shell profile ─────────────────────────────────────
-PATH_ENTRY="export PATH=\"\$HOME/.qwenpaw/bin:\$PATH\""
+PATH_ENTRY="export PATH=\"\$HOME/.drclaw/bin:\$PATH\""
 
 add_to_profile() {
     local profile="$1"
-    if [ -f "$profile" ] && grep -qF '.qwenpaw/bin' "$profile"; then
+    if [ -f "$profile" ] && { grep -qF '.drclaw/bin' "$profile" || grep -qF "$DRCLAW_HOME/bin" "$profile"; }; then
         return 0  # already present
     fi
     if [ -f "$profile" ] || [ "$2" = "create" ]; then
-        printf '\n# QwenPaw\n%s\n' "$PATH_ENTRY" >> "$profile"
+        printf '\n# Dr.Claw\n%s\n' "$PATH_ENTRY" >> "$profile"
         info "Updated $profile"
         return 0
     fi
@@ -346,12 +378,12 @@ esac
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
-printf "${GREEN}${BOLD}QwenPaw installed successfully!${RESET}\n"
+printf "${GREEN}${BOLD}Dr.Claw installed successfully!${RESET}\n"
 echo ""
 
 # Install summary
-printf "  Install location:  ${BOLD}%s${RESET}\n" "$QWENPAW_HOME"
-printf "  Python:            ${BOLD}%s${RESET}\n" "$("$QWENPAW_VENV/bin/python" --version 2>&1)"
+printf "  Install location:  ${BOLD}%s${RESET}\n" "$DRCLAW_HOME"
+printf "  Python:            ${BOLD}%s${RESET}\n" "$("$DRCLAW_VENV/bin/python" --version 2>&1)"
 if [ "$_CONSOLE_AVAILABLE" = 1 ]; then
     printf "  Console (web UI):  ${GREEN}available${RESET}\n"
 else
@@ -369,8 +401,8 @@ fi
 
 echo "Then run:"
 echo ""
-printf "  ${BOLD}qwenpaw init${RESET}       # first-time setup\n"
-printf "  ${BOLD}qwenpaw app${RESET}        # start QwenPaw\n"
+printf "  ${BOLD}drclaw init${RESET}       # first-time setup\n"
+printf "  ${BOLD}drclaw app${RESET}        # start Dr.Claw\n"
 echo ""
 printf "To upgrade later, re-run this installer.\n"
-printf "To uninstall, run: ${BOLD}qwenpaw uninstall${RESET}\n"
+printf "To uninstall, run: ${BOLD}drclaw uninstall${RESET}\n"

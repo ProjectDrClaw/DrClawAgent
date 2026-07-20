@@ -386,7 +386,7 @@ class MatrixConfig(BaseChannelConfig):
     vision_enabled: bool = True
     history_limit: int = 50
     password: str = ""
-    device_name: str = "qwenpaw-worker"
+    device_name: str = "drclaw-worker"
     # matrix-nio sync long-poll timeout (ms); typical 30s
     sync_timeout_ms: int = Field(default=30000, ge=5000, le=300000)
     # When True, prepend HTML pill to formatted_body for outbound mentions.

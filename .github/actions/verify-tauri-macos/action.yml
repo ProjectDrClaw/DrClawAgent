@@ -30,6 +30,7 @@ runs:
       shell: bash
       env:
         QWENPAW_DASHSCOPE_API_KEY: ${{ inputs.dashscope-api-key }}
+        DRCLAW_DASHSCOPE_API_KEY: ${{ inputs.dashscope-api-key }}
         ALLOW_FLAKY_LLM: ${{ inputs.allow-flaky-llm }}
       run: |
         set -euo pipefail

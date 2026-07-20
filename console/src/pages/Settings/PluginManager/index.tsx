@@ -69,7 +69,10 @@ export default function PluginManagerPage() {
             <Button
               icon={<ExternalLink size={16} />}
               onClick={() =>
-                window.open("https://platform.agentscope.io/plugins", "_blank")
+                window.open(
+                  "https://github.com/ProjectDrClaw/DrClawAgent/tree/main/plugins",
+                  "_blank",
+                )
               }
             >
               {t("pluginManager.publishBtn")}

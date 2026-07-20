@@ -33,7 +33,7 @@ function generateFallbackFilename(): string {
     .replace(/\..+/, "")
     .replace("T", "_")
     .slice(0, 15); // YYYYMMDD_HHMMSS
-  return `qwenpaw_workspace_${agentId}_${timestamp}.zip`;
+  return `drclaw_workspace_${agentId}_${timestamp}.zip`;
 }
 
 function encodePath(path: string): string {

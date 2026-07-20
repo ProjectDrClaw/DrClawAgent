@@ -505,7 +505,7 @@ Docker / Compose / CI / 桌面安装包对外统一为 Dr.Claw，环境变量与
 | 项 | 建议 |
 |----|------|
 | Docker 发布 | GHCR `ghcr.io/{owner}/drclaw`（或组织约定名） |
-| upstream 社区 Bot / 官网自动发布等 | 改为仅 `workflow_dispatch`，避免误发 upstream 渠道 |
+| upstream 社区 Bot / 官网自动发布等 | **已删除**相关 workflow（欢迎 Bot、值班、公开 PyPI、夜间全量、spam-gate 等） |
 | 测试触发分支 | 按本仓库约定保留 `main`/`develop` |
 
 具体 owner/镜像名以团队仓库为准，实施时写死一处常量并在 `DRCLAW_ENV_zh.md` 示例中同步。
@@ -598,7 +598,7 @@ console/src-tauri/tauri.conf.json
 
 | 项 | 原因 |
 |----|------|
-| `website/**` 大改 | 非本期交付重点 |
+| ~~`website/**`~~ | 已删除；用户文档迁至 `docs/` |
 | `import qwenpaw` / pip 名 | 生态兼容 |
 | `window.QwenPaw.*` | 插件兼容 |
 | Skill metadata `"qwenpaw"` | 生态兼容 |

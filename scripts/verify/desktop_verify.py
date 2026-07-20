@@ -799,9 +799,11 @@ def main() -> int:
     )
     parser.add_argument(
         "--api-key",
-        default=os.environ.get("QWENPAW_DASHSCOPE_API_KEY", ""),
+        default=os.environ.get("DRCLAW_DASHSCOPE_API_KEY")
+        or os.environ.get("QWENPAW_DASHSCOPE_API_KEY", ""),
         help="DashScope API key. Falls back to env "
-        "QWENPAW_DASHSCOPE_API_KEY. Empty value -> auto skip-chat.",
+        "DRCLAW_DASHSCOPE_API_KEY / QWENPAW_DASHSCOPE_API_KEY. "
+        "Empty value -> auto skip-chat.",
     )
     parser.add_argument(
         "--provider",

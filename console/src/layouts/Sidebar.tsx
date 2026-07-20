@@ -343,7 +343,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
     if (onChatPage) {
       window.dispatchEvent(new CustomEvent("qwenpaw:sidebar-new-chat"));
     } else {
-      sessionStorage.setItem("qwenpaw_pending_new_chat", "1");
+      sessionStorage.setItem("drclaw_pending_new_chat", "1");
       const mode = codingMode ? "coding" : "chat";
       navigate(`/${mode}`);
     }

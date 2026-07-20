@@ -1,6 +1,6 @@
 # Reusable verification gate: install the built artefacts, boot the server,
 # and hit /api/version before any publish step runs.
-# Called by publish-pypi.yml, docker-release.yml, and fork-verify.yml.
+# Called by docker-release.yml and fork-verify.yml.
 
 name: Release Verification
 
@@ -92,7 +92,7 @@ jobs:
       - name: Verify CLI version
         shell: bash
         run: |
-          actual=$(qwenpaw --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9.]*' | head -1)
+          actual=$(drclaw --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9.]*' | head -1)
           expected="${{ steps.expected.outputs.version }}"
           echo "Expected: $expected"
           echo "Actual:   $actual"
@@ -109,9 +109,9 @@ jobs:
       - name: Initialize and start server
         shell: bash
         run: |
-          qwenpaw init --defaults --accept-security
-          qwenpaw app --host 127.0.0.1 --port 8088 &
-          echo $! > "$RUNNER_TEMP/qwenpaw.pid" || true
+          drclaw init --defaults --accept-security
+          drclaw app --host 127.0.0.1 --port 8088 &
+          echo $! > "$RUNNER_TEMP/drclaw.pid" || true
 
       - name: Wait for /api/version
         shell: bash
@@ -143,8 +143,8 @@ jobs:
         if: always()
         shell: bash
         run: |
-          if [ -f "$RUNNER_TEMP/qwenpaw.pid" ]; then
-            kill "$(cat "$RUNNER_TEMP/qwenpaw.pid")" 2>/dev/null || true
+          if [ -f "$RUNNER_TEMP/drclaw.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/drclaw.pid")" 2>/dev/null || true
           fi
           if [ "$RUNNER_OS" = "Linux" ] || [ "$RUNNER_OS" = "macOS" ]; then
             lsof -ti:8088 | xargs kill 2>/dev/null || true
@@ -282,9 +282,9 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
-            source "$USERPROFILE/.qwenpaw/venv/Scripts/activate"
+            source "$USERPROFILE/.drclaw/venv/Scripts/activate"
           else
-            export PATH="$HOME/.qwenpaw/bin:$PATH"
+            export PATH="$HOME/.drclaw/venv/bin:$PATH"
           fi
 
           # Verify version matches source
@@ -293,7 +293,7 @@ jobs:
           text = pathlib.Path('src/qwenpaw/__version__.py').read_text()
           print(re.search(r'__version__\s*=\s*\"([^\"]+)\"', text).group(1))
           ")
-          actual=$(qwenpaw --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9.]*' | head -1)
+          actual=$(drclaw --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9.]*' | head -1)
           echo "Expected: $expected"
           echo "Actual:   $actual"
           if [ "$actual" != "$expected" ]; then
@@ -301,9 +301,9 @@ jobs:
             exit 1
           fi
 
-          qwenpaw init --defaults --accept-security
-          qwenpaw app --host 127.0.0.1 --port 8088 &
-          echo $! > "$RUNNER_TEMP/qwenpaw.pid" || true
+          drclaw init --defaults --accept-security
+          drclaw app --host 127.0.0.1 --port 8088 &
+          echo $! > "$RUNNER_TEMP/drclaw.pid" || true
           for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:8088/api/version; then
               echo ""
@@ -319,8 +319,8 @@ jobs:
         if: always()
         shell: bash
         run: |
-          if [ -f "$RUNNER_TEMP/qwenpaw.pid" ]; then
-            kill "$(cat "$RUNNER_TEMP/qwenpaw.pid")" 2>/dev/null || true
+          if [ -f "$RUNNER_TEMP/drclaw.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/drclaw.pid")" 2>/dev/null || true
           fi
           if [ "$RUNNER_OS" = "Linux" ] || [ "$RUNNER_OS" = "macOS" ]; then
             lsof -ti:8088 | xargs kill 2>/dev/null || true

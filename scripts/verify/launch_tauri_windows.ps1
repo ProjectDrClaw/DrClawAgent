@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 
 # 1. Run NSIS silent install (matches real user installer).
 #    /S = silent, run the installer to completion before continuing.
-$installer = Get-ChildItem dist/QwenPaw-Tauri-*-Windows-setup.exe |
+$installer = Get-ChildItem dist/DrClaw-Tauri-*-Windows-setup.exe |
   Select-Object -First 1
 if (-not $installer) { throw "NSIS installer not found in dist/" }
 Write-Host "Installing $($installer.Name) silently..."
@@ -32,7 +32,7 @@ foreach ($hive in @("HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
   if ($reg) {
     $loc = (Get-ItemProperty $reg.PSPath).InstallLocation
     if ($loc -and (Test-Path $loc)) {
-      $found = Get-ChildItem -Path $loc -Filter "qwenpaw-desktop.exe" `
+      $found = Get-ChildItem -Path $loc -Filter "drclaw-desktop.exe" `
         -Recurse -Depth 3 -ErrorAction SilentlyContinue |
         Select-Object -First 1
       if ($found) { $tauriExe = $found.FullName; break }
@@ -50,7 +50,7 @@ if (-not $tauriExe) {
   )
   foreach ($root in $candidateRoots) {
     if (Test-Path $root) {
-      $found = Get-ChildItem -Path $root -Filter "qwenpaw-desktop.exe" `
+      $found = Get-ChildItem -Path $root -Filter "drclaw-desktop.exe" `
         -Recurse -Depth 3 -ErrorAction SilentlyContinue |
         Select-Object -First 1
       if ($found) { $tauriExe = $found.FullName; break }

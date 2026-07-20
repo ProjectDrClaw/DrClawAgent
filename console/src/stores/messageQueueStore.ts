@@ -71,7 +71,7 @@ export interface QueueItemInput {
 // removed eagerly via remove())
 // ---------------------------------------------------------------------------
 
-export const STORAGE_PREFIX = "qwenpaw:message-queue:";
+export const STORAGE_PREFIX = "drclaw:message-queue:";
 
 /** Shape persisted in localStorage per session */
 interface PersistedQueue {

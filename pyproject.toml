@@ -1,7 +1,7 @@
 [project]
 name = "qwenpaw"
 dynamic = ["version"]
-description = "QwenPaw is a **personal assistant** that runs in your own environment. It talks to you over multiple channels (DingTalk, Feishu, QQ, Discord, iMessage, etc.) and runs scheduled tasks according to your configuration. **What it can do is driven by Skills — the possibilities are open-ended.** Built-in skills include cron, PDF/Office handling, news digest, file reading, and more; you can add custom skills. All data and tasks run on your machine; no third-party hosting."
+description = "Dr.Claw — medical private-deployment personal AI assistant (customized from QwenPaw). CLI entrypoint: drclaw."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 dependencies = [
@@ -69,13 +69,35 @@ dependencies = [
     # wheels for all three OSes.
     "ast-grep-cli>=0.20",
     "html2text>=2024.2.26",
+    # 文档处理（医疗场景 PDF/Office/OCR）
+    "pypdf>=5.0.0",
+    "pdfplumber>=0.11.0",
+    "pdf2image>=1.17.0",
+    "openpyxl>=3.1.0",
+    "defusedxml>=0.7.0",
+    "lxml>=5.0.0",
+    "python-docx>=1.1.0",
+    "python-pptx>=1.0.0",
+    "chardet>=5.0.0",
+    "requests>=2.31.0",
+    "pandas>=2.0.0",
+    "reportlab>=4.0.0",
+    "markitdown[pptx]>=0.0.1",
+    "pytesseract>=0.3.0",
+    "pypdfium2>=4.0.0",
+    # NumPy 2.4+ 要求 X86_V2；旧 CPU / 未透传特性的 VM 会在 import 时失败
+    "numpy>=1.24.0,<2.4",
+    "scipy>=1.15.3",
+    "patsy>=0.5.6",
+    "statsmodels>=0.14.0",
+    "matplotlib>=3.8.0",
 ]
 
 [project.urls]
-Homepage = "https://qwenpaw.agentscope.io/"
-Repository = "https://github.com/agentscope-ai/QwenPaw"
-Documentation = "https://qwenpaw.agentscope.io/docs/"
-Issues = "https://github.com/agentscope-ai/QwenPaw/issues"
+Homepage = "https://github.com/ProjectDrClaw/DrClawAgent"
+Repository = "https://github.com/ProjectDrClaw/DrClawAgent"
+Documentation = "https://github.com/ProjectDrClaw/DrClawAgent/tree/main/docs"
+Issues = "https://github.com/ProjectDrClaw/DrClawAgent/issues"
 
 [tool.setuptools.dynamic]
 version = {attr = "qwenpaw.__version__.__version__"}

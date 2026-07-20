@@ -27,6 +27,13 @@ from .config import ExecutionResult, SandboxConfig
 logger = logging.getLogger(__name__)
 
 
+def _working_state_dir() -> Path:
+    """返回沙箱元数据目录（与 Dr.Claw WORKING_DIR 一致）。"""
+    from ..constant import WORKING_DIR
+
+    return Path(WORKING_DIR)
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Constants
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1151,7 +1158,7 @@ def _save_container_metadata(
     """Persists container metadata for the cleanup script.
 
     Args:
-        state_dir: QwenPaw state directory (``~/.qwenpaw``).
+        state_dir: Dr.Claw state directory（默认 ``~/.drclaw``，兼容旧路径）。
         container_name: AppContainer profile name.
         sid: AppContainer SID string.
         workspace_dir: Workspace directory path.
@@ -1231,10 +1238,7 @@ class WindowsSandbox:
         self._process_id: Optional[int] = None
         self._container_name: Optional[str] = None
         self._container_sid: Optional[str] = None
-        self._state_dir = (
-            Path(os.environ.get("USERPROFILE", os.path.expanduser("~")))
-            / ".qwenpaw"
-        )
+        self._state_dir = _working_state_dir()
 
     @property
     def config(self) -> SandboxConfig:
@@ -1425,9 +1429,7 @@ class WindowsSandbox:
 # Shutdown cleanup (mirrors restricted sandbox's atexit approach)
 # ═══════════════════════════════════════════════════════════════════════════
 
-_state_dir = (
-    Path(os.environ.get("USERPROFILE", os.path.expanduser("~"))) / ".qwenpaw"
-)
+_state_dir = _working_state_dir()
 
 
 def _is_pid_alive(pid: int) -> bool:
@@ -1600,7 +1602,7 @@ def _cleanup_single_container(meta: dict, meta_file: Path) -> None:
 def shutdown_cleanup() -> None:
     """Destroys AppContainer sandboxes owned by this process or orphaned.
 
-    For each container metadata file in ~/.qwenpaw/containers/:
+    For each container metadata file in WORKING_DIR/containers/:
       - Skips containers owned by other still-running processes
       - Removes filesystem ACL entries
       - Deletes the AppContainer profile

@@ -361,7 +361,7 @@ const resolveRealId = (
 // Per-session user message persistence (survives page refresh)
 // ---------------------------------------------------------------------------
 
-const STORAGE_PREFIX = "qwenpaw_pending_user_msg_";
+const STORAGE_PREFIX = "drclaw_pending_user_msg_";
 
 /** Shape stored in sessionStorage. Backward compat: old format was plain text. */
 interface PendingUserMsg {

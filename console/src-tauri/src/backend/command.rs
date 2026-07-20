@@ -122,16 +122,16 @@ fn packaged_node_runtime(app: &tauri::AppHandle) -> Option<PathBuf> {
 #[cfg(not(debug_assertions))]
 fn packaged_backend_executable(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let executable_name = if cfg!(windows) {
-        "qwenpaw-backend.exe"
+        "drclaw-backend.exe"
     } else {
-        "qwenpaw-backend"
+        "drclaw-backend"
     };
     let path = app
         .path()
         .resource_dir()
         .map_err(|err| format!("failed to resolve resource directory: {err}"))?
         .join("binaries")
-        .join("qwenpaw-backend")
+        .join("drclaw-backend")
         .join(executable_name);
 
     if path.is_file() {

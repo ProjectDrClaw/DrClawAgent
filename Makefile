@@ -1,4 +1,4 @@
-# CoPaw Test & Coverage Makefile
+# Dr.Claw Test & Coverage Makefile
 
 .PHONY: test test-unit test-contract test-integration test-channel test-channel-contract coverage-full clean
 

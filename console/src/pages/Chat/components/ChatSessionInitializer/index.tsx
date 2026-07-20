@@ -202,9 +202,9 @@ const ChatSessionInitializer: React.FC = () => {
 
     // Check for pending new-chat flag set by Sidebar when navigating from
     // another page. Must be deferred so the library has initialized.
-    const pendingNewChat = sessionStorage.getItem("qwenpaw_pending_new_chat");
+    const pendingNewChat = sessionStorage.getItem("drclaw_pending_new_chat");
     if (pendingNewChat) {
-      sessionStorage.removeItem("qwenpaw_pending_new_chat");
+      sessionStorage.removeItem("drclaw_pending_new_chat");
       requestAnimationFrame(() => handleNewChat());
     }
 

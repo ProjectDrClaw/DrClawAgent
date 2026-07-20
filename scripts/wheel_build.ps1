@@ -28,8 +28,8 @@ if (Test-Path $ConsoleDest) {
 $ConsoleDist = Join-Path $ConsoleDir "dist"
 Copy-Item -Path (Join-Path $ConsoleDist "*") -Destination $ConsoleDest -Recurse -Force
 
-Write-Host "[wheel_build] Bundling website docs into package..."
-$DocsSrc = Join-Path $RepoRoot "website\public\docs"
+Write-Host "[wheel_build] Bundling docs into package..."
+$DocsSrc = Join-Path $RepoRoot "docs"
 $DocsDest = Join-Path $RepoRoot "src\qwenpaw\docs"
 if (Test-Path $DocsDest) { Remove-Item -Recurse -Force $DocsDest }
 New-Item -ItemType Directory -Force -Path $DocsDest | Out-Null

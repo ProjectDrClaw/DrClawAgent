@@ -1,10 +1,10 @@
 [package]
-name = "qwenpaw-desktop"
+name = "drclaw-desktop"
 version = "0.1.0"
 description = "Dr.Claw Desktop Tauri shell wrapping the Console frontend and Python FastAPI backend sidecar."
 authors = ["Dr.Claw Contributors"]
 license = "Apache-2.0"
-repository = "https://github.com/agentscope-ai/QwenPaw"
+repository = "https://github.com/ProjectDrClaw/DrClawAgent"
 edition = "2021"
 rust-version = "1.77.2"
 
@@ -24,14 +24,9 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 futures-util = "0.3"
 reqwest = { version = "0.12", default-features = false, features = ["stream"] }
-semver = "1"
-base64 = "0.22"
-minisign-verify = "0.2"
-sha2 = "0.10"
 tauri = { version = "2.10.3", features = ["tray-icon", "devtools"] }
 tauri-plugin-log = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
-tauri-plugin-updater = "2"
 tokio = { version = "1", features = ["fs", "io-util"] }
 dirs = "5"

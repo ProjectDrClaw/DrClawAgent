@@ -26,16 +26,16 @@ def _format_bind_address(host: str, port: int) -> str:
 
 
 def _warn_if_auth_off_non_loopback_bind(host: str, port: int) -> None:
-    """Warn when QwenPaw is reachable beyond loopback without auth."""
+    """Warn when Dr.Claw is reachable beyond loopback without auth."""
     if is_auth_enabled() or is_loopback_host(host):
         return
 
     bind_address = _format_bind_address(host, port)
     warning = f"""
 ============================================================
-SECURITY NOTICE: QwenPaw is bound to {bind_address} without authentication.
+SECURITY NOTICE: Dr.Claw is bound to {bind_address} without authentication.
 
-Anyone who can reach this address may access QwenPaw APIs without login.
+Anyone who can reach this address may access Dr.Claw APIs without login.
 
 Recommended:
   - Restrict access to a trusted network interface or protected environment.
@@ -87,7 +87,7 @@ Recommended:
     default=None,
     help="[DEPRECATED] Number of worker processes. "
     "This option is deprecated and will be removed in a future version. "
-    "QwenPaw always uses 1 worker.",
+    "Dr.Claw always uses 1 worker.",
 )
 def app_cmd(
     host: str,
@@ -97,7 +97,7 @@ def app_cmd(
     log_level: str,
     hide_access_paths: tuple[str, ...],
 ) -> None:
-    """Run QwenPaw FastAPI app."""
+    """Run Dr.Claw FastAPI app."""
     # NOTE: the server intentionally runs UNPRIVILEGED. The Windows
     # restricted-token sandbox no longer requires the whole server to be
     # elevated (which PR #5931 forced via ShellExecuteW("runas"), breaking
@@ -114,7 +114,7 @@ def app_cmd(
             err=True,
         )
         click.echo(
-            "   QwenPaw always uses 1 worker for stability. "
+            "   Dr.Claw always uses 1 worker for stability. "
             "Your specified value will be ignored.",
             err=True,
         )
@@ -129,10 +129,12 @@ def app_cmd(
 
     # Signal reload mode to browser_control.py for Windows
     # compatibility: use sync Playwright + ThreadPool only when reload=True
+    from ..env_resolve import pop_env, set_env
+
     if reload:
-        os.environ["QWENPAW_RELOAD_MODE"] = "1"
+        set_env("RELOAD_MODE", "1")
     else:
-        os.environ.pop("QWENPAW_RELOAD_MODE", None)
+        pop_env("RELOAD_MODE")
 
     setup_logger(log_level)
     if log_level in ("debug", "trace"):

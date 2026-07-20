@@ -16,7 +16,7 @@ When answering questions about **installation, configuration, or behavioral prin
 
 1. Extract the topic from the user's question (match against the left column or synonyms in the table below).
 2. Resolve **`$QWENPAW_ROOT`**: use `which qwenpaw` to get the executable path. If it is `…/.qwenpaw/bin/qwenpaw`, the source root is three levels up (consistent with the **guidance** skill); otherwise, determine it from the user-provided installation path.
-3. Resolve **`$DOCS_DIR`** first (cross-install compatible): run `python3 -c "from qwenpaw.constant import DOCS_DIR; print(DOCS_DIR or '')" 2>/dev/null`. If it returns a valid path, use it directly. Otherwise, fallback to `$QWENPAW_ROOT/website/public/docs/`.
+3. Resolve **`$DOCS_DIR`** first (cross-install compatible): run `python3 -c "from qwenpaw.constant import DOCS_DIR; print(DOCS_DIR or '')" 2>/dev/null`. If it returns a valid path, use it directly. Otherwise, fallback to `$DRCLAW_ROOT/docs/`.
 4. **Read documentation first**: `$DOCS_DIR/<topic>.<language>.md` (use the same language as the user: `zh` / `en`.). If that is insufficient, read the **source entry points** listed in the table.
 
 ## Topic / Keywords → Preferred Documentation and Source Code
@@ -42,7 +42,7 @@ When answering questions about **installation, configuration, or behavioral prin
 
 ## Conventions
 
-- Full documentation path: `$DOCS_DIR/<topic>.<language>.md` (fall back to `.en.md` if the corresponding language file does not exist). Prefer `DOCS_DIR` from `qwenpaw.constant`; fallback to `$QWENPAW_ROOT/website/public/docs/`.
+- Full documentation path: `$DOCS_DIR/<topic>.<language>.md` (fall back to `.en.md` if the corresponding language file does not exist). Prefer `DOCS_DIR` from `qwenpaw.constant`; fallback to `$DRCLAW_ROOT/docs/`.
 - The **source entry points** in the table are starting points; use `read_file` or targeted `grep` to narrow down to specific symbols — do not read through an entire large directory listing at once.
 
 ## Notes

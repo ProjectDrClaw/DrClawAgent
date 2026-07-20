@@ -1033,7 +1033,7 @@ PROVIDER_ZHIPU_INTL_CODINGPLAN = OpenAIProvider(
 
 PROVIDER_QWENPAW = OpenAIProvider(
     id="qwenpaw-local",
-    name="QwenPaw Local",
+    name="Dr.Claw Local",
     is_local=True,
     require_api_key=False,
 )

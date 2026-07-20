@@ -131,7 +131,7 @@ function ModelsPage() {
       return getIsConfigured(p);
     };
 
-    // QwenPaw Local is always "configured" (embedded)
+    // Dr.Claw Local is always "configured" (embedded)
     const isEmbedded = (p: ProviderInfo) =>
       p.id === "qwenpaw-local" || p.id === "copaw-local";
 

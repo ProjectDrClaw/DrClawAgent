@@ -146,7 +146,7 @@ if (-not (Test-PythonImport "from acp import Agent")) {
 Write-Host "== Running PyInstaller ==" -ForegroundColor Yellow
 Write-Host "Building onedir backend bundle..."
 
-$SPEC_FILE = Join-Path $REPO_ROOT "scripts\pack-tauri\qwenpaw.spec"
+$SPEC_FILE = Join-Path $REPO_ROOT "scripts\pack-tauri\drclaw.spec"
 if (-not (Test-Path $SPEC_FILE)) {
     Write-Host "ERROR: Spec file not found at $SPEC_FILE" -ForegroundColor Red
     exit 1
@@ -166,9 +166,9 @@ Write-Host "PyInstaller build complete" -ForegroundColor Green
 Write-Host ""
 
 # Verify output
-$BACKEND_DIR = Join-Path $DIST "pyinstaller\qwenpaw-backend"
-$BACKEND_EXE = Join-Path $BACKEND_DIR "qwenpaw-backend.exe"
-$CLI_EXE = Join-Path $BACKEND_DIR "qwenpaw.exe"
+$BACKEND_DIR = Join-Path $DIST "pyinstaller\drclaw-backend"
+$BACKEND_EXE = Join-Path $BACKEND_DIR "drclaw-backend.exe"
+$CLI_EXE = Join-Path $BACKEND_DIR "drclaw.exe"
 if (-not (Test-Path $BACKEND_DIR)) {
     Write-Host "ERROR: Backend bundle directory not found at $BACKEND_DIR" -ForegroundColor Red
     exit 1
@@ -194,7 +194,7 @@ Write-Host "== Copying to Tauri binaries directory ==" -ForegroundColor Yellow
 $BINARIES_DIR = Join-Path $REPO_ROOT "console\src-tauri\binaries"
 New-Item -ItemType Directory -Force -Path $BINARIES_DIR | Out-Null
 
-$DEST = Join-Path $BINARIES_DIR "qwenpaw-backend"
+$DEST = Join-Path $BINARIES_DIR "drclaw-backend"
 New-Item -ItemType Directory -Force -Path $DEST | Out-Null
 Get-ChildItem -LiteralPath $DEST -Force | Remove-Item -Recurse -Force
 Copy-Item -Recurse -Force (Join-Path $BACKEND_DIR "*") $DEST

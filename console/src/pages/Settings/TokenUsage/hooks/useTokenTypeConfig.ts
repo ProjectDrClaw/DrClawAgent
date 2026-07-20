@@ -17,7 +17,7 @@ interface UseTokenTypeConfigProps {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  "Prompt Tokens": "#1677ff",
+  "Prompt Tokens": "#2657C9",
   "Completion Tokens": "#52c41a",
   "Total Tokens": "#fa8c16",
 };

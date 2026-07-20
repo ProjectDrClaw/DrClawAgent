@@ -55,6 +55,10 @@ import {
 } from "../../plugins/registry/types";
 import { ChatScalar, ChatList } from "../../plugins/registry/slotKeys";
 import { HostRequestCard, HostResponseCard } from "./HostBubbles";
+import {
+  resolveChatAgentIdentity,
+  resolveChatColorPrimary,
+} from "./chatAgentIdentity";
 import { withGenericFallback } from "../../components/Chat/ToolCards/adapters/v1Adapter";
 import { applyApprovalLevelToRequestBody } from "./approvalPayload";
 import {
@@ -1157,7 +1161,7 @@ export default function ChatPage() {
       model_name: string;
     }>
   >([]);
-  const { selectedAgent } = useAgentStore();
+  const { selectedAgent, agents } = useAgentStore();
   const { toolRenderConfig } = usePlugins();
   const extScalar = useChatScalarSnapshot();
   const extLists = useChatListSnapshot();
@@ -2697,6 +2701,14 @@ export default function ChatPage() {
       variant: "navigator" as const,
     };
 
+    const colorPrimary = resolveChatColorPrimary(extColorPrimary);
+    const agentIdentity = resolveChatAgentIdentity(
+      selectedAgent,
+      agents,
+      t,
+      colorPrimary,
+    );
+
     // leftHeader: whole-section render wins, otherwise partial merge {logo, title}.
     const mergedLeftHeader: any =
       extLeftHeaderRender !== undefined ? (
@@ -2749,8 +2761,8 @@ export default function ChatPage() {
       },
       welcome: {
         ...i18nConfig.welcome,
-        nick: extNick ?? "QwenPaw",
-        avatar: extAvatar ?? "/qwenpaw.png",
+        nick: extNick ?? agentIdentity.nick,
+        avatar: extAvatar ?? agentIdentity.avatarSrc,
         ...(extGreeting !== undefined ? { greeting: extGreeting } : {}),
         ...(extDescription !== undefined
           ? { description: extDescription }
@@ -3046,6 +3058,7 @@ export default function ChatPage() {
     scheduleHistoryClear,
     consoleSkills,
     selectedAgent,
+    agents,
     runningConfigApprovalLevel,
     queueSessionId,
     onFileCardClick,

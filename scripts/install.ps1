@@ -1,9 +1,9 @@
-# QwenPaw Installer for Windows (self-contained: includes uv download via GitHub)
+# Dr.Claw Installer for Windows (self-contained: includes uv download via GitHub)
 # Usage: irm <url>/install.ps1 | iex
 #    or: .\install.ps1 [-Version X.Y.Z] [-FromSource] [-SourceDir DIR]
 #                            [-Extras "dev,whisper"] [-UvPath PATH]
 #
-# Installs QwenPaw into ~/.qwenpaw with a uv-managed Python environment.
+# Installs Dr.Claw into ~/.drclaw with a uv-managed Python environment.
 # Users do NOT need Python pre-installed — uv handles everything.
 #
 # uv is obtained automatically (no action required from the user):
@@ -28,22 +28,26 @@ param(
 $ErrorActionPreference = "Stop"
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
-$QwenpawHome     = if ($env:QWENPAW_HOME) { $env:QWENPAW_HOME } else { Join-Path $HOME ".qwenpaw" }
-$QwenpawVenv     = Join-Path $QwenpawHome "venv"
-$QwenpawBin      = Join-Path $QwenpawHome "bin"
+# 安装目录优先级：DRCLAW_HOME > QWENPAW_HOME > COPAW_HOME > ~/.drclaw
+if ($env:DRCLAW_HOME) { $DrclawHome = $env:DRCLAW_HOME }
+elseif ($env:QWENPAW_HOME) { $DrclawHome = $env:QWENPAW_HOME }
+elseif ($env:COPAW_HOME) { $DrclawHome = $env:COPAW_HOME }
+else { $DrclawHome = Join-Path $HOME ".drclaw" }
+$DrclawVenv     = Join-Path $DrclawHome "venv"
+$DrclawBin      = Join-Path $DrclawHome "bin"
 $PythonVersion = "3.12"
-$QwenpawRepo     = "https://github.com/agentscope-ai/QwenPaw.git"
+$DrclawRepo     = "https://github.com/ProjectDrClaw/DrClawAgent.git"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
-function Write-Info { param([string]$Message) Write-Host "[qwenpaw] " -ForegroundColor Green  -NoNewline; Write-Host $Message }
-function Write-Warn { param([string]$Message) Write-Host "[qwenpaw] " -ForegroundColor Yellow -NoNewline; Write-Host $Message }
-function Write-Err  { param([string]$Message) Write-Host "[qwenpaw] " -ForegroundColor Red    -NoNewline; Write-Host $Message }
+function Write-Info { param([string]$Message) Write-Host "[drclaw] " -ForegroundColor Green  -NoNewline; Write-Host $Message }
+function Write-Warn { param([string]$Message) Write-Host "[drclaw] " -ForegroundColor Yellow -NoNewline; Write-Host $Message }
+function Write-Err  { param([string]$Message) Write-Host "[drclaw] " -ForegroundColor Red    -NoNewline; Write-Host $Message }
 function Stop-WithError { param([string]$Message) Write-Err $Message; exit 1 }
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 if ($Help) {
     @"
-QwenPaw Installer for Windows
+Dr.Claw Installer for Windows
 
 Usage: .\install.ps1 [OPTIONS]
 
@@ -58,14 +62,15 @@ Options:
   -Help                 Show this help
 
 Environment:
-  QWENPAW_HOME            Installation directory (default: ~/.qwenpaw)
+  DRCLAW_HOME             Installation directory (default: ~/.drclaw)
+                          Also accepts QWENPAW_HOME / COPAW_HOME
 "@
     exit 0
 }
 
-Write-Host "[qwenpaw] " -ForegroundColor Green -NoNewline
-Write-Host "Installing QwenPaw into " -NoNewline
-Write-Host "$QwenpawHome" -ForegroundColor White
+Write-Host "[drclaw] " -ForegroundColor Green -NoNewline
+Write-Host "Installing Dr.Claw into " -NoNewline
+Write-Host "$DrclawHome" -ForegroundColor White
 
 # ── Execution Policy Check ────────────────────────────────────────────────────
 $policy = Get-ExecutionPolicy
@@ -195,16 +200,16 @@ function Ensure-Uv {
 Ensure-Uv
 
 # ── Step 2: Create / update virtual environment ──────────────────────────────
-if (Test-Path $QwenpawVenv) {
+if (Test-Path $DrclawVenv) {
     Write-Info "Existing environment found, upgrading..."
 } else {
     Write-Info "Creating Python $PythonVersion environment..."
 }
 
-uv venv $QwenpawVenv --python $PythonVersion --quiet --clear
+uv venv $DrclawVenv --python $PythonVersion --quiet --clear
 if ($LASTEXITCODE -ne 0) { Stop-WithError "Failed to create virtual environment" }
 
-$VenvPython = Join-Path $QwenpawVenv "Scripts\python.exe"
+$VenvPython = Join-Path $DrclawVenv "Scripts\python.exe"
 if (-not (Test-Path $VenvPython)) { Stop-WithError "Failed to create virtual environment" }
 
 $pyVersion = & $VenvPython --version 2>&1
@@ -282,12 +287,13 @@ function Cleanup-Console {
     }
 }
 
-$VenvQwenpaw = Join-Path $QwenpawVenv "Scripts\qwenpaw.exe"
+$VenvDrclaw = Join-Path $DrclawVenv "Scripts\drclaw.exe"
+$VenvQwenpawFallback = Join-Path $DrclawVenv "Scripts\qwenpaw.exe"
 
 if ($FromSource) {
     if ($SourceDir) {
         $SourceDir = (Resolve-Path $SourceDir).Path
-        Write-Info "Installing QwenPaw from local source: $SourceDir"
+        Write-Info "Installing Dr.Claw from local source: $SourceDir"
         Prepare-Console $SourceDir
         Write-Info "Installing package from source..."
         uv pip install "${SourceDir}${ExtrasSuffix}" --python $VenvPython
@@ -295,12 +301,12 @@ if ($FromSource) {
         Cleanup-Console $SourceDir
     } else {
         if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-            Stop-WithError "git is required for -FromSource without a local directory. Please install Git from https://git-scm.com/ or pass a local path: .\install.ps1 -FromSource -SourceDir C:\path\to\QwenPaw"
+            Stop-WithError "git is required for -FromSource without a local directory. Please install Git from https://git-scm.com/ or pass a local path: .\install.ps1 -FromSource -SourceDir C:\path\to\DrClawAgent"
         }
-        Write-Info "Installing QwenPaw from source (GitHub)..."
-        $cloneDir = Join-Path $env:TEMP "qwenpaw-install-$(Get-Random)"
+        Write-Info "Installing Dr.Claw from source (GitHub)..."
+        $cloneDir = Join-Path $env:TEMP "drclaw-install-$(Get-Random)"
         try {
-            git clone --depth 1 $QwenpawRepo $cloneDir
+            git clone --depth 1 $DrclawRepo $cloneDir
             if ($LASTEXITCODE -ne 0) { Stop-WithError "Failed to clone repository" }
             Prepare-Console $cloneDir
             Write-Info "Installing package from source..."
@@ -325,9 +331,12 @@ if ($FromSource) {
 }
 
 # Verify the CLI entry point exists
-if (-not (Test-Path $VenvQwenpaw)) { Stop-WithError "Installation failed: qwenpaw CLI not found in venv" }
+if (-not (Test-Path $VenvDrclaw) -and -not (Test-Path $VenvQwenpawFallback)) {
+    Stop-WithError "Installation failed: drclaw CLI not found in venv"
+}
+if (-not (Test-Path $VenvDrclaw)) { $VenvDrclaw = $VenvQwenpawFallback }
 
-Write-Info "QwenPaw installed successfully"
+Write-Info "Dr.Claw installed successfully"
 
 # Check console availability (for PyPI installs, check the installed package)
 if (-not $script:ConsoleAvailable) {
@@ -336,18 +345,25 @@ if (-not $script:ConsoleAvailable) {
 }
 
 # ── Step 4: Create wrapper scripts ───────────────────────────────────────────
-New-Item -ItemType Directory -Path $QwenpawBin -Force | Out-Null
+New-Item -ItemType Directory -Path $DrclawBin -Force | Out-Null
 
-$wrapperPath = Join-Path $QwenpawBin "qwenpaw.ps1"
+$wrapperPath = Join-Path $DrclawBin "drclaw.ps1"
 $wrapperContent = @'
-# QwenPaw CLI wrapper — delegates to the uv-managed environment.
+# Dr.Claw CLI wrapper — delegates to the uv-managed environment.
 $ErrorActionPreference = "Stop"
 
-$QwenpawHome = if ($env:QWENPAW_HOME) { $env:QWENPAW_HOME } else { Join-Path $HOME ".qwenpaw" }
-$RealBin   = Join-Path $QwenpawHome "venv\Scripts\qwenpaw.exe"
+if ($env:DRCLAW_HOME) { $DrclawHome = $env:DRCLAW_HOME }
+elseif ($env:QWENPAW_HOME) { $DrclawHome = $env:QWENPAW_HOME }
+elseif ($env:COPAW_HOME) { $DrclawHome = $env:COPAW_HOME }
+else { $DrclawHome = Join-Path $HOME ".drclaw" }
+$RealBin = $null
+foreach ($cand in @("drclaw.exe", "qwenpaw.exe", "copaw.exe")) {
+    $p = Join-Path $DrclawHome ("venv\Scripts\" + $cand)
+    if (Test-Path $p) { $RealBin = $p; break }
+}
 
-if (-not (Test-Path $RealBin)) {
-    Write-Error "QwenPaw environment not found at $QwenpawHome\venv"
+if (-not $RealBin) {
+    Write-Error "Dr.Claw environment not found at $DrclawHome\venv"
     Write-Error "Please reinstall: irm <install-url> | iex"
     exit 1
 }
@@ -359,15 +375,20 @@ Set-Content -Path $wrapperPath -Value $wrapperContent -Encoding UTF8
 Write-Info "Wrapper created at $wrapperPath"
 
 # Also create a .cmd wrapper for use from cmd.exe
-$cmdWrapperPath = Join-Path $QwenpawBin "qwenpaw.cmd"
+$cmdWrapperPath = Join-Path $DrclawBin "drclaw.cmd"
 $cmdWrapperContent = @"
 @echo off
-REM QwenPaw CLI wrapper — delegates to the uv-managed environment.
-set "QWENPAW_HOME=%QWENPAW_HOME%"
-if "%QWENPAW_HOME%"=="" set "QWENPAW_HOME=%USERPROFILE%\.qwenpaw"
-set "REAL_BIN=%QWENPAW_HOME%\venv\Scripts\qwenpaw.exe"
-if not exist "%REAL_BIN%" (
-    echo Error: QwenPaw environment not found at %QWENPAW_HOME%\venv >&2
+REM Dr.Claw CLI wrapper — delegates to the uv-managed environment.
+set "DRCLAW_HOME=%DRCLAW_HOME%"
+if "%DRCLAW_HOME%"=="" if defined QWENPAW_HOME set "DRCLAW_HOME=%QWENPAW_HOME%"
+if "%DRCLAW_HOME%"=="" if defined COPAW_HOME set "DRCLAW_HOME=%COPAW_HOME%"
+if "%DRCLAW_HOME%"=="" set "DRCLAW_HOME=%USERPROFILE%\.drclaw"
+set "REAL_BIN="
+if exist "%DRCLAW_HOME%\venv\Scripts\drclaw.exe" set "REAL_BIN=%DRCLAW_HOME%\venv\Scripts\drclaw.exe"
+if not defined REAL_BIN if exist "%DRCLAW_HOME%\venv\Scripts\qwenpaw.exe" set "REAL_BIN=%DRCLAW_HOME%\venv\Scripts\qwenpaw.exe"
+if not defined REAL_BIN if exist "%DRCLAW_HOME%\venv\Scripts\copaw.exe" set "REAL_BIN=%DRCLAW_HOME%\venv\Scripts\copaw.exe"
+if not defined REAL_BIN (
+    echo Error: Dr.Claw environment not found at %DRCLAW_HOME%\venv >&2
     echo Please reinstall: irm ^<install-url^> ^| iex >&2
     exit /b 1
 )
@@ -377,8 +398,14 @@ if not exist "%REAL_BIN%" (
 Set-Content -Path $cmdWrapperPath -Value $cmdWrapperContent -Encoding UTF8
 Write-Info "CMD wrapper created at $cmdWrapperPath"
 
+# 兼容旧命令名
+Copy-Item -Force $wrapperPath (Join-Path $DrclawBin "qwenpaw.ps1")
+Copy-Item -Force $cmdWrapperPath (Join-Path $DrclawBin "qwenpaw.cmd")
+Copy-Item -Force $wrapperPath (Join-Path $DrclawBin "copaw.ps1")
+Copy-Item -Force $cmdWrapperPath (Join-Path $DrclawBin "copaw.cmd")
+
 # ──Step 5: Update PATH via User Environment Variable ────────────────────────
-$targetPath = $QwenpawBin
+$targetPath = $DrclawBin
 $registryPath = "HKCU:\Environment"
 $registryName = "Path"
 
@@ -456,10 +483,10 @@ if (-not $isAlreadyAdded) {
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 Write-Host ""
-Write-Host "QwenPaw installed successfully!" -ForegroundColor Green
+Write-Host "Dr.Claw installed successfully!" -ForegroundColor Green
 Write-Host ""
 
-Write-Host "  Install location:  " -NoNewline; Write-Host "$QwenpawHome" -ForegroundColor White
+Write-Host "  Install location:  " -NoNewline; Write-Host "$DrclawHome" -ForegroundColor White
 Write-Host "  Python:            " -NoNewline; Write-Host "$pyVersion"  -ForegroundColor White
 if ($script:ConsoleAvailable) {
     Write-Host "  Console (web UI):  " -NoNewline; Write-Host "available"     -ForegroundColor Green
@@ -471,11 +498,11 @@ Write-Host ""
 
 Write-Host "To get started, open a new terminal and run:"
 Write-Host ""
-Write-Host "  qwenpaw init" -ForegroundColor White -NoNewline; Write-Host "       # first-time setup"
-Write-Host "  qwenpaw app"  -ForegroundColor White -NoNewline; Write-Host "        # start QwenPaw"
+Write-Host "  drclaw init" -ForegroundColor White -NoNewline; Write-Host "       # first-time setup"
+Write-Host "  drclaw app"  -ForegroundColor White -NoNewline; Write-Host "        # start Dr.Claw"
 Write-Host ""
 Write-Host "To upgrade later, re-run this installer."
 Write-Host "To uninstall, run: " -NoNewline
-Write-Host "qwenpaw uninstall" -ForegroundColor White
+Write-Host "drclaw uninstall" -ForegroundColor White
 
 } @args

@@ -29,9 +29,9 @@ describe("URL constants", () => {
     expect(PYPI_URL).toBe("https://pypi.org/pypi/qwenpaw/json");
   });
 
-  it("GITHUB_URL points to QwenPaw repo", () => {
+  it("GITHUB_URL points to DrClawAgent repo", () => {
     expect(GITHUB_URL).toContain("github.com");
-    expect(GITHUB_URL).toContain("QwenPaw");
+    expect(GITHUB_URL).toContain("DrClawAgent");
   });
 });
 
@@ -56,26 +56,26 @@ describe("getWebsiteLang", () => {
 });
 
 describe("getDocsUrl", () => {
-  it("includes lang param", () => {
+  it("points to repo docs", () => {
     const url = getDocsUrl("zh");
-    expect(url).toContain("lang=zh");
-    expect(url).toContain("/docs/intro");
+    expect(url).toContain("DrClawAgent");
+    expect(url).toContain("/docs");
   });
 });
 
 describe("getFaqUrl", () => {
-  it("includes lang param", () => {
+  it("points to README", () => {
     const url = getFaqUrl("en");
-    expect(url).toContain("lang=en");
-    expect(url).toContain("/docs/faq");
+    expect(url).toContain("DrClawAgent");
+    expect(url).toContain("README");
   });
 });
 
 describe("getReleaseNotesUrl", () => {
-  it("includes lang param", () => {
+  it("points to GitHub releases", () => {
     const url = getReleaseNotesUrl("zh");
-    expect(url).toContain("lang=zh");
-    expect(url).toContain("/release-notes");
+    expect(url).toContain("DrClawAgent");
+    expect(url).toContain("/releases");
   });
 });
 

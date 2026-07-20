@@ -39,55 +39,16 @@ const CHANNELS_WITH_ACCESS_CONTROL: ChannelKey[] = [
   "openim",
 ];
 
-// Doc EN URLs per channel (anchors on https://qwenpaw.agentscope.io/docs/channels)
+// 频道文档外链（仅保留第三方官方文档）
 const CHANNEL_DOC_EN_URLS: Partial<Record<ChannelKey, string>> = {
-  dingtalk:
-    "https://qwenpaw.agentscope.io/docs/channels/?lang=en#DingTalk-recommended",
-  feishu: "https://qwenpaw.agentscope.io/docs/channels/?lang=en#Feishu-Lark",
-  imessage:
-    "https://qwenpaw.agentscope.io/docs/channels/?lang=en#iMessage-macOS-only",
-  discord: "https://qwenpaw.agentscope.io/docs/channels/?lang=en#Discord",
-  qq: "https://qwenpaw.agentscope.io/docs/channels/?lang=en#QQ",
-  telegram: "https://qwenpaw.agentscope.io/docs/channels/?lang=en#Telegram",
-  mqtt: "https://qwenpaw.agentscope.io/docs/channels/?lang=en#MQTT",
-  mattermost: "https://qwenpaw.agentscope.io/docs/channels/?lang=en#Mattermost",
-  matrix: "https://qwenpaw.agentscope.io/docs/channels/?lang=en#Matrix",
-  sip: "https://qwenpaw.agentscope.io/docs/channels/?lang=en#SIP",
-  wecom:
-    "https://qwenpaw.agentscope.io/docs/channels/?lang=en#WeCom-WeChat-Work",
-  wechat:
-    "https://qwenpaw.agentscope.io/docs/channels/?lang=en#WeChat-Personal-iLink",
   xiaoyi:
     "https://developer.huawei.com/consumer/cn/doc/service/openclaw-0000002518410344",
-  yuanbao: "https://qwenpaw.agentscope.io/docs/channels/?lang=en#Yuanbao",
-  onebot:
-    "https://qwenpaw.agentscope.io/docs/channels/?lang=en#OneBot-v11-NapCat--QQ-full-protocol",
-  slack: "https://qwenpaw.agentscope.io/docs/channels/?lang=en#Slack",
   openim: "https://docs.openim.io/",
 };
 
-// Doc ZH URLs per channel (anchors on https://qwenpaw.agentscope.io/docs/channels)
 const CHANNEL_DOC_ZH_URLS: Partial<Record<ChannelKey, string>> = {
-  dingtalk: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#钉钉推荐",
-  feishu: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#飞书",
-  imessage:
-    "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#iMessage仅-macOS",
-  discord: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#Discord",
-  qq: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#QQ",
-  telegram: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#Telegram",
-  mqtt: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#MQTT",
-  mattermost: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#Mattermost",
-  matrix: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#Matrix",
-  sip: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#SIP",
-  wecom: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#企业微信",
-  wechat: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#微信个人iLink",
   xiaoyi:
     "https://developer.huawei.com/consumer/cn/doc/service/openclaw-0000002518410344",
-  yuanbao:
-    "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#腾讯元宝Yuanbao",
-  onebot:
-    "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#OneBot-v11NapCat--QQ-完整协议",
-  slack: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#Slack",
   openim: "https://docs.openim.io/zh-Hans/",
 };
 
@@ -169,7 +130,7 @@ export function ChannelDrawer({
   const currentAgent = agents.find((a) => a.id === selectedAgent);
   const defaultMediaDir = currentAgent?.workspace_dir
     ? `${currentAgent.workspace_dir}/media`
-    : "~/.qwenpaw/media";
+    : "~/.drclaw/media";
   const currentLang = i18n.language?.startsWith("zh") ? "zh" : "en";
   const label = activeKey ? getChannelLabel(activeKey, t) : activeLabel;
   const { message } = useAppMessage();
@@ -290,9 +251,9 @@ export function ChannelDrawer({
             <Form.Item
               name="device_name"
               label="Device Name"
-              tooltip="A stable device identity for the Matrix client. Defaults to 'qwenpaw-worker' if left empty."
+              tooltip="A stable device identity for the Matrix client. Defaults to 'drclaw-worker' if left empty."
             >
-              <Input placeholder="qwenpaw-worker" />
+              <Input placeholder="drclaw-worker" />
             </Form.Item>
             <Form.Item
               name="dm_disabled"
@@ -1214,7 +1175,7 @@ export function ChannelDrawer({
               label={t("channels.wechatBotTokenFile")}
               tooltip={t("channels.wechatBotTokenFileTooltip")}
             >
-              <Input placeholder="~/.qwenpaw/wechat_bot_token" />
+              <Input placeholder="~/.drclaw/wechat_bot_token" />
             </Form.Item>
             <Form.Item name="media_dir" label={t("channels.wechatMediaDir")}>
               <Input placeholder={defaultMediaDir} />
@@ -1555,13 +1516,12 @@ export function ChannelDrawer({
               const url =
                 CHANNEL_DOC_EN_URLS[activeKey]! ||
                 CHANNEL_DOC_ZH_URLS[activeKey]!;
-              const isQwenPawDoc = url.includes(
-                "qwenpaw.agentscope.io/docs/channels/",
-              );
               const finalUrl =
-                isQwenPawDoc && currentLang === "zh"
-                  ? CHANNEL_DOC_ZH_URLS[activeKey]!
-                  : CHANNEL_DOC_EN_URLS[activeKey]!;
+                currentLang === "zh"
+                  ? (CHANNEL_DOC_ZH_URLS[activeKey] ||
+                    CHANNEL_DOC_EN_URLS[activeKey]!)
+                  : (CHANNEL_DOC_EN_URLS[activeKey] ||
+                    CHANNEL_DOC_ZH_URLS[activeKey]!);
               openExternalLink(finalUrl);
             }}
             className={styles.dingtalkDocBtn}

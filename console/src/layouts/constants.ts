@@ -2,7 +2,11 @@
 
 export const PYPI_URL = "https://pypi.org/pypi/qwenpaw/json";
 
-export const GITHUB_URL = "https://github.com/agentscope-ai/QwenPaw" as const;
+export const GITHUB_URL =
+  "https://github.com/ProjectDrClaw/DrClawAgent" as const;
+
+const DOCS_BASE =
+  "https://github.com/ProjectDrClaw/DrClawAgent/tree/main/docs";
 
 // ── Timing ────────────────────────────────────────────────────────────────
 
@@ -13,19 +17,16 @@ export const ONE_HOUR_MS = 60 * 60 * 1000;
 export const getWebsiteLang = (lang: string): string =>
   lang.startsWith("zh") ? "zh" : "en";
 
-export const getDocsUrl = (lang: string): string =>
-  `https://qwenpaw.agentscope.io/docs/intro?lang=${getWebsiteLang(lang)}`;
+/** 文档入口（仓库 docs） */
+export const getDocsUrl = (_lang: string): string => DOCS_BASE;
 
-export const getFaqUrl = (lang: string): string =>
-  `https://qwenpaw.agentscope.io/docs/faq?lang=${getWebsiteLang(lang)}`;
+export const getFaqUrl = (_lang: string): string =>
+  `${GITHUB_URL}/blob/main/README_zh.md`;
 
-export const getReleaseNotesUrl = (lang: string): string =>
-  `https://qwenpaw.agentscope.io/release-notes?lang=${getWebsiteLang(lang)}`;
+export const getReleaseNotesUrl = (_lang: string): string =>
+  `${GITHUB_URL}/releases`;
 
-export const getFeatureDemosUrl = (lang: string): string =>
-  `https://qwenpaw.agentscope.io/docs/functiondemo?lang=${getWebsiteLang(
-    lang,
-  )}`;
+export const getFeatureDemosUrl = (_lang: string): string => DOCS_BASE;
 
 // ── Version helpers ────────────────────────────────────────────────────────
 
@@ -77,24 +78,23 @@ export const compareVersions = (a: string, b: string): number => {
 };
 
 // ── Update markdown ───────────────────────────────────────────────────────
-// TODO
 export const UPDATE_MD: Record<string, string> = {
-  zh: `### QwenPaw如何更新
+  zh: `### Dr.Claw 如何更新
 
-要更新 QwenPaw 到最新版本，可根据你的安装方式选择对应方法：
+要更新 Dr.Claw 到最新版本，可根据你的安装方式选择对应方法：
 
 1. 如果你使用的是一键安装脚本，直接重新运行安装命令即可自动升级。
 
 2. 如果你是通过 pip 安装，在终端中执行以下命令升级：
 
 \`\`\`
-qwenpaw update
+drclaw update
 \`\`\`
 
 3. 如果你是从源码安装，进入项目目录并拉取最新代码后重新安装：
 
 \`\`\`
-cd QwenPaw
+cd DrClawAgent
 git pull origin main
 cd console && npm ci && npm run build
 cd .. && mkdir -p src/qwenpaw/console
@@ -102,31 +102,31 @@ cp -R console/dist/. src/qwenpaw/console/
 pip install -e .
 \`\`\`
 
-4. 如果你使用的是 Docker，拉取最新镜像并重启容器：
+4. 如果你使用的是 Docker，在项目目录拉取最新代码后重建并重启：
 
 \`\`\`
-docker pull agentscope/qwenpaw:latest
-docker run -p 127.0.0.1:8088:8088 -v qwenpaw-data:/app/working -v qwenpaw-secrets:/app/working.secret -v qwenpaw-backups:/app/working.backups agentscope/qwenpaw:latest
+git pull origin main
+docker compose up -d --build
 \`\`\`
 
-升级后重启服务 qwenpaw app。`,
+升级后重启服务：\`drclaw app\`。`,
 
-  ru: `### Как обновить QwenPaw
+  ru: `### Как обновить Dr.Claw
 
-Чтобы обновить QwenPaw, выберите способ в зависимости от типа установки:
+Чтобы обновить Dr.Claw, выберите способ в зависимости от типа установки:
 
 1. Если вы устанавливали через однострочный скрипт, повторно запустите установщик для обновления.
 
 2. Если устанавливали через pip, выполните:
 
 \`\`\`
-qwenpaw update
+drclaw update
 \`\`\`
 
 3. Если устанавливали из исходников, получите последние изменения и переустановите:
 
 \`\`\`
-cd QwenPaw
+cd DrClawAgent
 git pull origin main
 cd console && npm ci && npm run build
 cd .. && mkdir -p src/qwenpaw/console
@@ -134,31 +134,31 @@ cp -R console/dist/. src/qwenpaw/console/
 pip install -e .
 \`\`\`
 
-4. Если используете Docker, загрузите новый образ и перезапустите контейнер:
+4. Если используете Docker, обновите код и пересоберите контейнеры:
 
 \`\`\`
-docker pull agentscope/qwenpaw:latest
-docker run -p 127.0.0.1:8088:8088 -v qwenpaw-data:/app/working -v qwenpaw-secrets:/app/working.secret -v qwenpaw-backups:/app/working.backups agentscope/qwenpaw:latest
+git pull origin main
+docker compose up -d --build
 \`\`\`
 
-After upgrading, restart the service with \`qwenpaw app\`.`,
+После обновления перезапустите сервис: \`drclaw app\`.`,
 
-  en: `### How to update QwenPaw
+  en: `### How to update Dr.Claw
 
-To update QwenPaw, use the method matching your installation type:
+To update Dr.Claw, use the method matching your installation type:
 
 1. If installed via one-line script, re-run the installer to upgrade.
 
 2. If installed via pip, run:
 
 \`\`\`
-qwenpaw update
+drclaw update
 \`\`\`
 
 3. If installed from source, pull the latest code and reinstall:
 
 \`\`\`
-cd QwenPaw
+cd DrClawAgent
 git pull origin main
 cd console && npm ci && npm run build
 cd .. && mkdir -p src/qwenpaw/console
@@ -166,12 +166,12 @@ cp -R console/dist/. src/qwenpaw/console/
 pip install -e .
 \`\`\`
 
-4. If using Docker, pull the latest image and restart the container:
+4. If using Docker, pull the latest code and rebuild:
 
 \`\`\`
-docker pull agentscope/qwenpaw:latest
-docker run -p 127.0.0.1:8088:8088 -v qwenpaw-data:/app/working -v qwenpaw-secrets:/app/working.secret -v qwenpaw-backups:/app/working.backups agentscope/qwenpaw:latest
+git pull origin main
+docker compose up -d --build
 \`\`\`
 
-After upgrading, restart the service with \`qwenpaw app\`.`,
+After upgrading, restart the service with \`drclaw app\`.`,
 };

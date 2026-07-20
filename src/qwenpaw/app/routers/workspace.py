@@ -1076,7 +1076,7 @@ async def download_workspace(request: Request):
     buf = await asyncio.to_thread(_zip_directory, workspace_dir)
 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"qwenpaw_workspace_{agent.agent_id}_{timestamp}.zip"
+    filename = f"drclaw_workspace_{agent.agent_id}_{timestamp}.zip"
 
     return StreamingResponse(
         buf,

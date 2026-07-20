@@ -88,16 +88,9 @@
     "featureDemos": "Demo tính năng",
     "faq": "FAQ",
     "github": "GitHub",
-    "resources": "Tài liệu",
-    "updateAvailable": "Có bản cập nhật"
+    "resources": "Tài liệu"
   },
   "sidebar": {
-    "newVersion": "Phiên bản mới: v{{version}}, nhấn để cập nhật",
-    "updateModal": {
-      "title": "Phiên bản mới: v{{version}}",
-      "viewReleases": "Xem ghi chú phát hành",
-      "close": "Đóng"
-    },
     "settings": {
       "language": "Ngôn ngữ",
       "theme": "Giao diện",

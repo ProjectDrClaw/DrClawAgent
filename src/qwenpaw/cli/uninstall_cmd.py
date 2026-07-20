@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""qwenpaw uninstall — remove the QwenPaw environment and CLI wrapper."""
+"""drclaw uninstall — 移除 Dr.Claw 环境与 CLI 包装脚本。"""
 from __future__ import annotations
 
-import shutil
 import re
+import shutil
 from pathlib import Path
 
 import click
@@ -11,10 +11,10 @@ import click
 from ..constant import WORKING_DIR
 
 
-# Directories created by the installer (relative to WORKING_DIR).
+# 安装脚本创建的目录（相对于 WORKING_DIR）。
 _INSTALLER_DIRS = ("venv", "bin")
 
-# Shell profiles to clean up.
+# 需要清理 PATH 的 shell 配置文件。
 _SHELL_PROFILES = (
     Path.home() / ".zshrc",
     Path.home() / ".bashrc",
@@ -23,23 +23,25 @@ _SHELL_PROFILES = (
 
 
 def _remove_path_entry(profile: Path) -> bool:
-    """
-    Remove QwenPaw PATH lines from a shell profile. Returns True if changed.
-    """
+    """移除 Dr.Claw / 旧品牌 PATH 行。有改动则返回 True。"""
     if not profile.is_file():
         return False
 
-    text = profile.read_text()
-    # Remove the "# QwenPaw" comment line and the export PATH line
-    cleaned = re.sub(
+    text = profile.read_text(encoding="utf-8")
+    cleaned = text
+    # Dr.Claw / 兼容旧注释与路径
+    patterns = (
+        r"\n?# Dr\.Claw\nexport PATH=\"\$HOME/\.drclaw/bin:\$PATH\"\n?",
         r"\n?# QwenPaw\nexport PATH=\"\$HOME/\.qwenpaw/bin:\$PATH\"\n?",
-        "\n",
-        text,
+        r"\n?# CoPaw\nexport PATH=\"\$HOME/\.copaw/bin:\$PATH\"\n?",
+        r"\n?# QwenPaw\nexport PATH=\"\$HOME/\.drclaw/bin:\$PATH\"\n?",
     )
+    for pattern in patterns:
+        cleaned = re.sub(pattern, "\n", cleaned)
     if cleaned == text:
         return False
 
-    profile.write_text(cleaned)
+    profile.write_text(cleaned, encoding="utf-8")
     return True
 
 
@@ -47,43 +49,38 @@ def _remove_path_entry(profile: Path) -> bool:
 @click.option(
     "--purge",
     is_flag=True,
-    help="Also remove all data (config, chats, models, etc.)",
+    help="同时删除全部数据（配置、会话、模型等）",
 )
-@click.option("--yes", is_flag=True, help="Do not prompt for confirmation")
+@click.option("--yes", is_flag=True, help="跳过确认提示")
 def uninstall_cmd(purge: bool, yes: bool) -> None:
-    """Remove QwenPaw environment, CLI wrapper, and shell PATH entries."""
+    """移除 Dr.Claw 环境、CLI 包装与 shell PATH 条目。"""
     wd = WORKING_DIR
 
     if purge:
-        click.echo(f"This will remove ALL QwenPaw data in {wd}")
+        click.echo(f"将删除 {wd} 下的全部 Dr.Claw 数据")
     else:
-        click.echo(
-            "This will remove the QwenPaw Python environment and CLI wrapper.",
-        )
-        click.echo(f"Your configuration and data in {wd} will be preserved.")
+        click.echo("将删除 Dr.Claw Python 环境与 CLI 包装脚本。")
+        click.echo(f"{wd} 中的配置与数据会保留。")
 
     if not yes:
-        ok = click.confirm("Continue?", default=False)
+        ok = click.confirm("继续？", default=False)
         if not ok:
-            click.echo("Cancelled.")
+            click.echo("已取消。")
             return
 
-    # Remove installer-managed directories
     for dirname in _INSTALLER_DIRS:
         d = wd / dirname
         if d.exists():
             shutil.rmtree(d)
-            click.echo(f"  Removed {d}")
+            click.echo(f"  已删除 {d}")
 
-    # Purge everything if requested
     if purge and wd.exists():
         shutil.rmtree(wd)
-        click.echo(f"  Removed {wd}")
+        click.echo(f"  已删除 {wd}")
 
-    # Clean shell profiles
     for profile in _SHELL_PROFILES:
         if _remove_path_entry(profile):
-            click.echo(f"  Cleaned {profile}")
+            click.echo(f"  已清理 {profile}")
 
     click.echo("")
-    click.echo("QwenPaw uninstalled. Please restart your terminal.")
+    click.echo("Dr.Claw 已卸载。请重新打开终端。")

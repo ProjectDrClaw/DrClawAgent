@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-QwenPaw E2E Test Framework Configuration Module
+Dr.Claw E2E Test Framework Configuration Module
 
 Provides unified configuration management with environment variable overrides.
+优先 DRCLAW_*，兼容 QWENPAW_*。
 """
 from __future__ import annotations
 
@@ -10,6 +11,15 @@ import os
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
+
+
+def _env_first(*names: str, default: Optional[str] = None) -> Optional[str]:
+    """按顺序取第一个非空环境变量。"""
+    for name in names:
+        value = os.getenv(name)
+        if value is not None and value != "":
+            return value
+    return default
 
 
 @dataclass
@@ -82,12 +92,14 @@ class Config:
 
     Uses the singleton pattern and supports environment variable overrides.
 
-    Environment variables:
-    - QWENPAW_BASE_URL: Server URL
-    - QWENPAW_HEADLESS: Headless mode (true/false)
-    - QWENPAW_TIMEOUT: Timeout (milliseconds)
-    - QWENPAW_USER_ID: User ID
-    - QWENPAW_CHANNEL: Channel name
+    Environment variables (DRCLAW_* preferred, QWENPAW_* fallback):
+    - DRCLAW_BASE_URL / QWENPAW_BASE_URL: Server URL
+    - DRCLAW_HEADLESS / QWENPAW_HEADLESS: Headless mode (true/false)
+    - DRCLAW_TIMEOUT / QWENPAW_TIMEOUT: Timeout (milliseconds)
+    - DRCLAW_USER_ID / QWENPAW_USER_ID: User ID
+    - DRCLAW_CHANNEL / QWENPAW_CHANNEL: Channel name
+    - DRCLAW_DASHSCOPE_API_KEY / QWENPAW_DASHSCOPE_API_KEY
+    - DRCLAW_WORKING_DIR / QWENPAW_WORKING_DIR: seed data directory
     - PLAYWRIGHT_SLOW_MO: Slow motion delay (milliseconds)
     """
     
@@ -114,35 +126,45 @@ class Config:
     
     def _load_from_env(self):
         """Load configuration from environment variables"""
-        # Server configuration
-        if os.getenv("QWENPAW_BASE_URL"):
-            self.server.base_url = os.getenv("QWENPAW_BASE_URL")
+        base_url = _env_first("DRCLAW_BASE_URL", "QWENPAW_BASE_URL")
+        if base_url:
+            self.server.base_url = base_url
 
-        # Browser configuration
-        headless_env = os.getenv("QWENPAW_HEADLESS", "true").lower()
+        headless_env = (
+            _env_first("DRCLAW_HEADLESS", "QWENPAW_HEADLESS", default="true")
+            or "true"
+        ).lower()
         self.browser.headless = headless_env in ("true", "1", "yes")
 
-        if os.getenv("QWENPAW_TIMEOUT"):
+        timeout_raw = _env_first("DRCLAW_TIMEOUT", "QWENPAW_TIMEOUT")
+        if timeout_raw:
             try:
-                timeout = int(os.getenv("QWENPAW_TIMEOUT"))
+                timeout = int(timeout_raw)
                 self.browser.timeout = timeout
                 self.server.timeout = timeout
             except ValueError:
                 import warnings
-                warnings.warn(f"Invalid QWENPAW_TIMEOUT value: '{os.getenv('QWENPAW_TIMEOUT')}', using default")
+                warnings.warn(
+                    f"Invalid timeout value: '{timeout_raw}', using default",
+                )
 
         if os.getenv("PLAYWRIGHT_SLOW_MO"):
             self.browser.slow_mo = int(os.getenv("PLAYWRIGHT_SLOW_MO"))
 
-        # Test configuration
-        if os.getenv("QWENPAW_USER_ID"):
-            self.test.user_id = os.getenv("QWENPAW_USER_ID")
+        user_id = _env_first("DRCLAW_USER_ID", "QWENPAW_USER_ID")
+        if user_id:
+            self.test.user_id = user_id
 
-        if os.getenv("QWENPAW_CHANNEL"):
-            self.test.channel = os.getenv("QWENPAW_CHANNEL")
+        channel = _env_first("DRCLAW_CHANNEL", "QWENPAW_CHANNEL")
+        if channel:
+            self.test.channel = channel
 
-        if os.getenv("QWENPAW_DASHSCOPE_API_KEY"):
-            self.server.model_key = os.getenv("QWENPAW_DASHSCOPE_API_KEY")
+        model_key = _env_first(
+            "DRCLAW_DASHSCOPE_API_KEY",
+            "QWENPAW_DASHSCOPE_API_KEY",
+        )
+        if model_key:
+            self.server.model_key = model_key
 
         # Set API base URL
         if not self.server.api_base_url:
@@ -177,25 +199,25 @@ class Config:
         what the running backend reads.
 
         Strict guarantees:
-        1. ``QWENPAW_WORKING_DIR`` MUST be set.
+        1. ``DRCLAW_WORKING_DIR`` or ``QWENPAW_WORKING_DIR`` MUST be set.
         2. The resolved path MUST be outside the user's home directory.
-           Writing seed data into ``~/.qwenpaw`` (or anywhere under
-           ``$HOME``) would corrupt the developer's real QwenPaw data.
+           Writing seed data into ``~/.drclaw`` (or anywhere under
+           ``$HOME``) would corrupt the developer's real Dr.Claw data.
 
         Set it via:
         - ``e2e/scripts/start_test_server.sh`` (local; exports the var)
         - ``.github/workflows/_e2e-job.yml`` (CI; writes to
           ``$GITHUB_ENV``)
-        - or run ``QWENPAW_WORKING_DIR=/tmp/some/isolated/dir pytest``
+        - or run ``DRCLAW_WORKING_DIR=/tmp/some/isolated/dir pytest``
         """
-        explicit = os.getenv("QWENPAW_WORKING_DIR")
+        explicit = _env_first("DRCLAW_WORKING_DIR", "QWENPAW_WORKING_DIR")
         if not explicit:
             raise RuntimeError(
-                "QWENPAW_WORKING_DIR is not set. Refusing to fall back "
-                "to ~/.qwenpaw because that would corrupt the user's "
-                "real QwenPaw data. Start the backend via "
-                "e2e/scripts/start_test_server.sh, or run "
-                "`QWENPAW_WORKING_DIR=/tmp/qwenpaw-e2e-test-work-dir/working "
+                "DRCLAW_WORKING_DIR (or QWENPAW_WORKING_DIR) is not set. "
+                "Refusing to fall back to ~/.drclaw because that would "
+                "corrupt the user's real Dr.Claw data. Start the backend "
+                "via e2e/scripts/start_test_server.sh, or run "
+                "`DRCLAW_WORKING_DIR=/tmp/drclaw-e2e-test-work-dir/working "
                 "pytest ...` against an isolated backend on the same "
                 "directory."
             )
@@ -208,11 +230,11 @@ class Config:
             in_home = False
         if in_home:
             raise RuntimeError(
-                f"QWENPAW_WORKING_DIR={resolved} is inside the user "
+                f"DRCLAW_WORKING_DIR={resolved} is inside the user "
                 f"home ({home}). Refusing to seed e2e fixtures into a "
-                "directory that may hold the developer's real QwenPaw "
+                "directory that may hold the developer's real Dr.Claw "
                 "data. Point it at an isolated location such as "
-                "/tmp/qwenpaw-e2e-test-work-dir/working."
+                "/tmp/drclaw-e2e-test-work-dir/working."
             )
         return resolved
 

@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  # ── Build wheel (same steps as publish-pypi.yml build job) ─────────────────
+  # ── Build wheel ───────────────────────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
     steps:
@@ -47,7 +47,7 @@ jobs:
         run: |
           rm -rf src/qwenpaw/docs
           mkdir -p src/qwenpaw/docs
-          cp website/public/docs/*.md src/qwenpaw/docs/
+          cp docs/*.md src/qwenpaw/docs/
 
       - name: Install build dependencies
         run: |

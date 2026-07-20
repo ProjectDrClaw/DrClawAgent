@@ -1,10 +1,7 @@
 self-hosted-runner:
   labels: []
 config-variables:
-  - tauri_updater_pubkey
-  - tauri_updater_endpoints
   - oss_bucket
-  - oss_public_base_url
   - review_model
 paths:
   # Legacy build-windows / build-macos jobs are intentionally parked with

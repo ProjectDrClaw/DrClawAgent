@@ -39,6 +39,7 @@ import type {
   ChatRequestData,
   ChatResponseData,
 } from "../../plugins/registry/types";
+import ChatAgentIdentityHeader from "./components/ChatAgentIdentityHeader";
 
 function sortByOrder<T extends { item: { order?: number } }>(arr: T[]): T[] {
   return arr
@@ -123,10 +124,8 @@ export function HostResponseCard(props: {
   const prependList = sortByOrder(extLists[ChatList.responsePrepend]);
   const appendList = sortByOrder(extLists[ChatList.responseAppend]);
 
-  // prepend/append are routed through vendor's contentPrepend/contentAppend
-  // slot so they land BETWEEN messages and Actions — actions always last.
-  // Vendor change: see Response/Card.js DefaultResponseRender, which now
-  // reads props.contentPrepend / props.contentAppend.
+  // ChatAgentIdentityHeader 负责助手昵称/头像（随当前智能体切换）。
+  // prepend/append 走 vendor contentPrepend/contentAppend，落在消息与 Actions 之间。
   const contentPrepend =
     prependList.length === 0 ? null : (
       <>
@@ -141,6 +140,12 @@ export function HostResponseCard(props: {
         ))}
       </>
     );
+  const mergedContentPrepend = (
+    <>
+      <ChatAgentIdentityHeader />
+      {contentPrepend}
+    </>
+  );
   const contentAppend =
     appendList.length === 0 ? null : (
       <>
@@ -160,7 +165,7 @@ export function HostResponseCard(props: {
     <VendorResponseCard
       data={props.data as AnyCardProps}
       isLast={props.isLast}
-      contentPrepend={contentPrepend as AnyCardProps}
+      contentPrepend={mergedContentPrepend as AnyCardProps}
       contentAppend={contentAppend as AnyCardProps}
     />
   );

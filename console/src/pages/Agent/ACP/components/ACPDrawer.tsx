@@ -15,7 +15,6 @@ import {
   type ACPAgentConfig,
   type ACPToolParseMode,
 } from "../../../../api/types";
-import { getWebsiteLang } from "../../../../layouts/constants";
 import styles from "../../../Control/Channels/index.module.less";
 import { openExternalLink } from "../../../../utils/openExternalLink";
 
@@ -39,16 +38,9 @@ const TOOL_PARSE_MODE_OPTIONS: { value: ACPToolParseMode; label: string }[] = [
   { value: "call_detail", label: "call_detail" },
 ];
 
-const ACP_DOC_SECTION_HASH = {
-  zh: "如何配置外部-runner",
-  en: "How-to-configure-external-runners",
-} as const;
-
-function getACPDocsUrl(lang: string): string {
-  const websiteLang = getWebsiteLang(lang);
-  const hash =
-    websiteLang === "zh" ? ACP_DOC_SECTION_HASH.zh : ACP_DOC_SECTION_HASH.en;
-  return `https://qwenpaw.agentscope.io/docs/acp-integration?lang=${websiteLang}#${hash}`;
+/** 文档按钮默认隐藏；链接指向仓库 docs */
+function getACPDocsUrl(_lang: string): string {
+  return "https://github.com/ProjectDrClaw/DrClawAgent/tree/main/docs";
 }
 
 export function parseArgsText(value: unknown): string[] {

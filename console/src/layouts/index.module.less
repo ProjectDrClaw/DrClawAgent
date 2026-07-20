@@ -373,7 +373,7 @@
 
   .stickyChatButtonActive {
     background: rgba(255, 127, 22, 0.5);
-    color: #ff7f16;
+    color: #2657C9;
   }
 
   :global {
@@ -407,7 +407,7 @@
     /* Selected item */
     .qwenpaw-menu-item-selected {
       background: rgba(255, 127, 22, 0.5) !important;
-      color: #ff7f16 !important;
+      color: #2657C9 !important;
     }
   }
 }
@@ -485,7 +485,7 @@
 
 .collapseBtn {
   margin: auto;
-  color: #ff7f16;
+  color: #2657C9;
 }
 
 // ─── Auth actions (account + logout) ──────────────────────────────────────────
@@ -539,12 +539,12 @@
 
   &:hover {
     background: rgba(0, 0, 0, 0.06) !important;
-    color: #ff7f16 !important;
+    color: #2657C9 !important;
   }
 }
 
 .modeToggleActive {
-  color: #ff7f16 !important;
+  color: #2657C9 !important;
   background: rgba(255, 127, 22, 0.08);
 }
 
@@ -561,7 +561,7 @@
   border: none;
   border-radius: 8px;
   background: rgba(255, 127, 22, 0.08);
-  color: #ff7f16;
+  color: #2657C9;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -711,7 +711,7 @@
 }
 
 .simpleSessionActionBtnActive {
-  color: #ff7f16 !important;
+  color: #2657C9 !important;
 }
 
 .simpleSessionLoading {
@@ -798,160 +798,6 @@
   }
 }
 
-// ─── Update Modal ─────────────────────────────────────────────────────────────
-.updateModal {
-  :global(.qwenpaw-modal-content) {
-    padding: 0 !important;
-    border-radius: 12px !important;
-    overflow: visible !important;
-    box-shadow: none !important;
-    border: none !important;
-  }
-
-  :global(.qwenpaw-modal-body) {
-    padding: 0 !important;
-  }
-
-  :global(.qwenpaw-modal-footer) {
-    padding: 12px 24px;
-    margin-top: 0;
-  }
-
-  :global(.qwenpaw-modal-header) {
-    display: none !important;
-  }
-
-  :global(.qwenpaw-modal-close) {
-    display: none !important;
-  }
-}
-
-.updateModalBanner {
-  background: url("/public/qwenpawBack.png") no-repeat center top;
-  background-size: contain;
-  padding: 48px 28px 0px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  min-height: 100px;
-  position: relative;
-  transform: translateY(-48px);
-}
-
-.updateModalBannerLeft {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.updateModalVersionTag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #fff;
-  border: 1px solid rgba(43, 18, 0, 0.12);
-  border-radius: 20px;
-  padding: 3px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(26, 23, 22, 0.65);
-  width: fit-content;
-}
-
-.updateModalBannerTitle {
-  font-size: 32px;
-  font-weight: 500;
-  line-height: 64.78px;
-  letter-spacing: normal;
-  color: #ff7f16;
-}
-
-.updateModalTitle {
-  color: #ff7f16;
-}
-
-.updateModalBody {
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 16px 24px 8px;
-  min-height: 120px;
-  margin-top: -40px;
-}
-
-.updateModalSpinWrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 120px;
-}
-
-.updateViewReleasesBtn {
-  background: #ff7f16 !important;
-  border-color: #ff7f16 !important;
-  color: #fff !important;
-
-  &:hover {
-    background: #d45b0a !important;
-    border-color: #d45b0a !important;
-  }
-}
-
-.updateModalPrimaryBtn {
-  background: #ff7f16;
-  border-color: #ff7f16;
-}
-
-// ─── Code block inside update modal ──────────────────────────────────────────
-.codeBlock {
-  position: relative;
-  background: #f5f5f5;
-  border: 1px solid #e8e8e8;
-  border-radius: 6px;
-  padding: 12px 40px 12px 16px;
-  overflow-x: auto;
-  margin: 8px 0;
-}
-
-.codeBlockInner {
-  font-family: monospace;
-  font-size: 13px;
-}
-
-.codeInline {
-  background: #f5f5f5;
-  border-radius: 3px;
-  padding: 1px 5px;
-  font-family: monospace;
-  font-size: 13px;
-}
-
-// ─── CopyButton ───────────────────────────────────────────────────────────────
-.copyBtn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  transition: color 0.2s;
-  background: none;
-  border: none;
-  padding: 2px 4px;
-  cursor: pointer;
-  line-height: 1;
-  border-radius: 4px;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.06);
-  }
-}
-
-.copyBtnCopied {
-  color: #52c41a;
-}
-
-.copyBtnDefault {
-  color: #999;
-}
-
-/* ─── Dark mode overrides ─────────────────────────────────────────────────── */
 :global(.dark-mode) {
   .header {
     background: #2657c9 !important;
@@ -1019,12 +865,12 @@
 
     &:hover {
       background: rgba(255, 255, 255, 0.08);
-      color: #ff7f16;
+      color: #2657C9;
     }
   }
 
   .modeToggleActive {
-    color: #ff7f16 !important;
+    color: #2657C9 !important;
     background: rgba(255, 127, 22, 0.12);
   }
 
@@ -1041,20 +887,6 @@
     background: rgba(255, 127, 22, 0.5) !important;
     color: rgba(255, 255, 255, 0.88) !important;
   }
-
-  .codeBlock {
-    background: #2a2a2a;
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .codeInline {
-    background: #2a2a2a;
-    color: rgba(255, 255, 255, 0.85);
-  }
-
-  .copyBtnDefault {
-    color: rgba(255, 255, 255, 0.3);
-  }
 }
 
 // ─── Simple mode: flat nav + session list ─────────────────────────────────────
@@ -1070,7 +902,7 @@
   border: none;
   border-radius: 8px;
   background: rgba(255, 127, 22, 0.08);
-  color: #ff7f16;
+  color: #2657C9;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -1220,7 +1052,7 @@
 }
 
 .simpleSessionActionBtnActive {
-  color: #ff7f16 !important;
+  color: #2657C9 !important;
 }
 
 .simpleSessionLoading {
@@ -1236,7 +1068,7 @@
   :global(.dark-mode) & {
     .simpleNewChat {
       background: rgba(255, 127, 22, 0.12);
-      color: #ff7f16;
+      color: #2657C9;
 
       &:hover {
         background: rgba(255, 127, 22, 0.2);
@@ -1254,7 +1086,7 @@
 
     .simpleNavItemActive {
       background: rgba(255, 127, 22, 0.5);
-      color: #ff7f16;
+      color: #2657C9;
     }
 
     .simpleSessionHeader {

@@ -98,7 +98,7 @@ echo ""
 
 echo "== Step 2b: Signing PyInstaller Backend =="
 bash "${SIGN_MACOS_BUNDLE}" \
-    "${REPO_ROOT}/console/src-tauri/binaries/qwenpaw-backend" \
+    "${REPO_ROOT}/console/src-tauri/binaries/drclaw-backend" \
     "${APPLE_SIGNING_IDENTITY}"
 echo "PyInstaller backend signed"
 echo ""
@@ -147,7 +147,7 @@ STAGED_APP_PATH="${DIST_DIR}/$(basename "${APP_PATH}")"
 echo ".app copied to ${STAGED_APP_PATH}"
 
 # Create ZIP archive
-ZIP_NAME="${DIST_ROOT}/QwenPaw-Tauri-${VERSION}-macOS.zip"
+ZIP_NAME="${DIST_ROOT}/DrClaw-Tauri-${VERSION}-macOS.zip"
 if [ -f "${ZIP_NAME}" ]; then
     rm -f "${ZIP_NAME}"
 fi
@@ -168,26 +168,12 @@ else
 fi
 echo ""
 
-UPDATER_NAME="${DIST_ROOT}/QwenPaw-Tauri-${VERSION}-macOS.app.tar.gz"
-case "$(uname -m)" in
-    arm64 | aarch64) UPDATER_TARGET="darwin-aarch64" ;;
-    *) UPDATER_TARGET="darwin-x86_64" ;;
-esac
-python "${REPO_ROOT}/scripts/pack-tauri/generate_update_manifest.py" stage \
-    --bundle-dir "${BUNDLE_DIR}/macos" \
-    --pattern '*.app.tar.gz' \
-    --target "${UPDATER_TARGET}" \
-    --output "${UPDATER_NAME}" \
-    --pubkey-config "${REPO_ROOT}/console/src-tauri/tauri.version.conf.json"
-
-echo ""
 echo "========================================="
 echo "Build Complete!"
 echo "========================================="
 echo "App:          ${APP_PATH}"
 echo "Distribution: ${DIST_DIR}"
 echo "Archive:      ${ZIP_NAME}"
-echo "Updater:      ${UPDATER_NAME}"
 echo ""
 echo "Test: open \"${STAGED_APP_PATH}\""
 echo ""

@@ -37,31 +37,10 @@ on:
 # pytest itself anymore.
 
 jobs:
-  spam-gate:
-    name: PR Spam Gate
-    if: github.event_name == 'pull_request'
-    uses: ./.github/workflows/pr-spam-gate.yml
-    with:
-      author: ${{ github.event.pull_request.user.login }}
 
-  approval-gate:
-    name: Maintainer Approval
-    needs: [spam-gate]
-    if: |
-      always() &&
-      (needs.spam-gate.result == 'skipped' || needs.spam-gate.outputs.blocked != 'true')
-    runs-on: ubuntu-latest
-    environment: maintainer-approved
-    steps:
-      - name: Approval granted
-        run: echo "Approved by maintainer"
 
   unit-tests:
     name: Unit Tests - py${{ matrix.python-version }} - ${{ matrix.os }}
-    needs: approval-gate
-    if: |
-      always() &&
-      needs.approval-gate.result == 'success'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -143,10 +122,6 @@ jobs:
 
   contract-tests:
     name: Contract Tests - py${{ matrix.python-version }} - ${{ matrix.os }}
-    needs: approval-gate
-    if: |
-      always() &&
-      needs.approval-gate.result == 'success'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -226,10 +201,6 @@ jobs:
 
   integrated-tests:
     name: Integrated Tests - py${{ matrix.python-version }} - ${{ matrix.os }}
-    needs: approval-gate
-    if: |
-      always() &&
-      needs.approval-gate.result == 'success'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -298,8 +269,7 @@ jobs:
           # Manual dispatch override -> use whatever the maintainer typed.
           # PR gate -> p0 only (fast feedback)
           # push / workflow_dispatch (no input) -> p0 + p1 (full pre-merge gate)
-          # nightly full sweep lives in full-tests-nightly.yml
-          if [ -n "${DISPATCH_MARKER}" ]; then
+                    if [ -n "${DISPATCH_MARKER}" ]; then
             EXPR="${DISPATCH_MARKER}"
           elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             EXPR="integration and p0"
@@ -316,8 +286,7 @@ jobs:
           # Subprocess coverage on the ubuntu/py3.11 entry only. conftest.py
           # treats empty / missing as off, so the other matrix entries do
           # not pay the tracer overhead. Multi-platform coverage is opt-in
-          # via full-tests-nightly.yml dispatch (coverage_platforms input).
-          QWENPAW_INTEGRATION_COVERAGE: ${{ (matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11') && '1' || '' }}
+                    QWENPAW_INTEGRATION_COVERAGE: ${{ (matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11') && '1' || '' }}
           # Windows runners are 2-core and IO-bound; under xdist parallel
           # the default 15s HTTP timeout is too tight and intermittently
           # surfaces as ``httpx.ReadTimeout``. Lift the floor here.
@@ -357,10 +326,8 @@ jobs:
 
   coverage-report:
     name: Coverage Report
-    needs: [approval-gate, unit-tests, contract-tests, integrated-tests]
-    if: |
-      always() &&
-      needs.approval-gate.result == 'success'
+    needs: [unit-tests, contract-tests, integrated-tests]
+    if: always()
     continue-on-error: true
     runs-on: ubuntu-latest
     permissions:
@@ -499,22 +466,16 @@ jobs:
 
   test-summary:
     name: Test Summary
-    needs: [approval-gate, unit-tests, contract-tests, integrated-tests, coverage-report]
+    needs: [unit-tests, contract-tests, integrated-tests, coverage-report]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check test results
         shell: bash
         run: |
-          echo "Approval gate: ${{ needs.approval-gate.result }}"
           echo "Unit tests: ${{ needs.unit-tests.result }}"
           echo "Contract tests: ${{ needs.contract-tests.result }}"
           echo "Integrated tests: ${{ needs.integrated-tests.result }}"
-
-          if [ "${{ needs.approval-gate.result }}" != "success" ]; then
-            echo "❌ Approval not granted"
-            exit 1
-          fi
 
           if [ "${{ needs.unit-tests.result }}" = "failure" ] || \
              [ "${{ needs.contract-tests.result }}" = "failure" ] || \

@@ -11,8 +11,6 @@
     "backend-download",
     "core:default",
     "core:webview:allow-internal-toggle-devtools",
-    "desktop-updater-check",
-    "desktop-updater-install",
     "devtools",
     "dialog:allow-open",
     "dialog:allow-save",

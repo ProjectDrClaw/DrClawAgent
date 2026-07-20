@@ -30,6 +30,7 @@ runs:
       shell: pwsh
       env:
         QWENPAW_DASHSCOPE_API_KEY: ${{ inputs.dashscope-api-key }}
+        DRCLAW_DASHSCOPE_API_KEY: ${{ inputs.dashscope-api-key }}
         PYTHONIOENCODING: utf-8
         ALLOW_FLAKY_LLM: ${{ inputs.allow-flaky-llm }}
       run: |

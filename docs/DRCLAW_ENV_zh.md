@@ -228,12 +228,12 @@ set_env("RELOAD_MODE", "1")             # 写入 DRCLAW_RELOAD_MODE
 
 ## 14. 未迁移项（刻意保留）
 
-以下 **不是** 应用运行时 `DRCLAW_*` 配置，无需改名：
+以下 **不是** 应用运行时 `DRCLAW_*` 配置，或已由安装脚本另行约定：
 
-- `QWENPAW_HOME` — 上游安装脚本安装目录
+- `DRCLAW_HOME` — 脚本安装目录（默认 `~/.drclaw`；兼容 `QWENPAW_HOME` / `COPAW_HOME`）
 - `QWENPAW_VERSION` — NSIS 打包编译常量
 - `QWENPAW_PET_*` — qwenpaw-pet 插件自有变量
 - `QWENPAW_INTEGRATION_COVERAGE` — 集成测试覆盖率开关
 - IM 通道 `TELEGRAM_*`、`FEISHU_*` 等
 
-上游 `website/public/docs/` 中仍可能出现 `QWENPAW_*` 表述；Dr.Claw 部署以本文为准。
+仓库 `docs/` 以 Dr.Claw 运维文档为准（`DRCLAW_*`）。

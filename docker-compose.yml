@@ -1,3 +1,7 @@
+# Dr.Claw 私有化部署编排
+# REGISTRY 示例：ghcr.io/your-org
+# POSTGRES_PASSWORD 必须通过环境变量或 .env 提供，勿把明文密码提交进仓库。
+
 services:
   drclaw:
     image: ${IMAGE:-drclaw:latest}
@@ -6,12 +10,64 @@ services:
     restart: unless-stopped
     ports:
       - "8088:8088"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - TZ=Asia/Shanghai
-      # - DRCLAW_AUTH_ENABLED=true
+      - DRCLAW_AUTH_ENABLED=${DRCLAW_AUTH_ENABLED:-true}
       # - DRCLAW_AUTH_USERNAME=admin
       # - DRCLAW_AUTH_PASSWORD=yourpassword
     volumes:
       - ./drclaw-data:/app/working
       - ./drclaw-secrets:/app/working.secret
       - ./drclaw-backups:/app/working.backups
+    networks:
+      - drclaw-net
+
+  sensevoice:
+    profiles: ["full"]
+    image: ${SENSEVOICE_IMAGE:-${REGISTRY}/sensevoice:cpu}
+    container_name: sensevoice
+    restart: unless-stopped
+    ports:
+      - "8898:8898"
+    networks:
+      - drclaw-net
+
+  database:
+    profiles: ["full"]
+    image: ${POSTGRES_IMAGE:-postgres:14}
+    container_name: database
+    restart: unless-stopped
+    ports:
+      - "35432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-drclaw}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-drclaw}
+      TZ: Asia/Shanghai
+    volumes:
+      - ./drclaw-database/data:/var/lib/postgresql/data
+      - ./drclaw-database/init-scripts:/docker-entrypoint-initdb.d
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - drclaw-net
+
+  business:
+    profiles: ["full"]
+    image: ${BUSINESS_IMAGE:-${REGISTRY}/drclaw-business:latest}
+    container_name: business
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SQLITE_DB_PATH: /app/data/business.db
+    volumes:
+      - ./drclaw-business:/app/data
+    networks:
+      - drclaw-net
+
+networks:
+  drclaw-net:
+    name: drclaw-net

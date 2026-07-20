@@ -8,15 +8,7 @@ Run from **repo root**.
 bash scripts/wheel_build.sh
 ```
 
-- Builds the console frontend (`console/`), copies `console/dist` to `src/qwenpaw/console/dist`, then builds the wheel. Output: `dist/*.whl`.
-
-## Build website
-
-```bash
-bash scripts/website_build.sh
-```
-
-- Installs dependencies (pnpm or npm) and runs the Vite build. Output: `website/dist/`.
+- Builds the console frontend (`console/`), copies `console/dist` to `src/qwenpaw/console/`, bundles `docs/*.md` into `src/qwenpaw/docs/`, then builds the wheel. Output: `dist/*.whl`.
 
 ## Build Docker image
 

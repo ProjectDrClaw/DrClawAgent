@@ -734,9 +734,9 @@ def run_doctor_checks(
         failed = True
         click.echo(click.style("FAIL", fg="red") + f" — {detail}", err=True)
         _doctor_fix_hint(
-            "Fix: set `QWENPAW_WORKING_DIR` (or legacy `COPAW_WORKING_DIR`) "
-            "or run `qwenpaw init`. "
-            "Preview the plan (no writes): `qwenpaw doctor fix --dry-run "
+            "Fix: set `DRCLAW_WORKING_DIR` (or legacy `QWENPAW_WORKING_DIR` / "
+            "`COPAW_WORKING_DIR`) or run `drclaw init`. "
+            "Preview the plan (no writes): `drclaw doctor fix --dry-run "
             "--only ensure-working-dir` if the parent path exists and is "
             "writable. Apply: run the plan `without --dry-run` (add `-y` to "
             "skip the confirmation prompt).",

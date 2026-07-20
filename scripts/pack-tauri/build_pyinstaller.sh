@@ -84,7 +84,7 @@ echo ""
 echo "== Running PyInstaller =="
 echo "Building onedir backend bundle..."
 
-SPEC_FILE="${REPO_ROOT}/scripts/pack-tauri/qwenpaw.spec"
+SPEC_FILE="${REPO_ROOT}/scripts/pack-tauri/drclaw.spec"
 if [ ! -f "$SPEC_FILE" ]; then
     echo "ERROR: Spec file not found at ${SPEC_FILE}"
     exit 1
@@ -100,9 +100,9 @@ echo "PyInstaller build complete"
 echo ""
 
 # Verify output
-BACKEND_DIR="${DIST}/pyinstaller/qwenpaw-backend"
-BACKEND_EXE="${BACKEND_DIR}/qwenpaw-backend"
-CLI_EXE="${BACKEND_DIR}/qwenpaw"
+BACKEND_DIR="${DIST}/pyinstaller/drclaw-backend"
+BACKEND_EXE="${BACKEND_DIR}/drclaw-backend"
+CLI_EXE="${BACKEND_DIR}/drclaw"
 if [ ! -d "${BACKEND_DIR}" ]; then
     echo "ERROR: Backend bundle directory not found at ${BACKEND_DIR}"
     exit 1
@@ -128,11 +128,11 @@ echo "== Copying to Tauri binaries directory =="
 BINARIES_DIR="${REPO_ROOT}/console/src-tauri/binaries"
 mkdir -p "${BINARIES_DIR}"
 
-DEST="${BINARIES_DIR}/qwenpaw-backend"
+DEST="${BINARIES_DIR}/drclaw-backend"
 mkdir -p "${DEST}"
 find "${DEST}" -mindepth 1 -exec rm -rf {} +
 cp -R "${BACKEND_DIR}/." "${DEST}/"
-chmod +x "${DEST}/qwenpaw-backend"
+chmod +x "${DEST}/drclaw-backend"
 chmod +x "${DEST}/qwenpaw"
 echo "Copied to: ${DEST}"
 echo ""

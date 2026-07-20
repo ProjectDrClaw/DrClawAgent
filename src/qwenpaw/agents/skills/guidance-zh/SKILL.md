@@ -1,6 +1,6 @@
 ---
 name: guidance
-description: "回答用户关于 QwenPaw 安装与配置的问题：优先定位并阅读本地文档，再提炼答案；若本地信息不足，兜底访问官网文档。"
+description: "回答用户关于 Dr.Claw 安装与配置的问题：优先定位并阅读本地文档，再提炼答案；若本地信息不足，兜底查阅仓库 docs。"
 metadata:
   builtin_skill_version: "1.3"
   qwenpaw:
@@ -8,9 +8,9 @@ metadata:
     requires: {}
 ---
 
-# QwenPaw 安装与配置问答指南
+# Dr.Claw 安装与配置问答指南
 
-当用户询问 **QwenPaw 的安装、初始化、环境配置、依赖要求、常见配置项** 时，使用本 skill。
+当用户询问 **Dr.Claw 的安装、初始化、环境配置、依赖要求、常见配置项** 时，使用本 skill。
 
 核心原则：
 
@@ -39,49 +39,49 @@ DOCS_DIR=$(python3 -c "from qwenpaw.constant import DOCS_DIR; print(DOCS_DIR or 
 
 ```bash
 # 获取memory中的文档目录
-DOCS_DIR=$(find ~/.qwenpaw/memory/ -type d -name "docs")
+DOCS_DIR=$(find ~/.drclaw/memory/ -type d -name "docs")
 ```
 
 如果 memory 中没有文档目录，则继续执行下面的逻辑。
 
 **检查项目源码中的文档目录**
 
-执行以下脚本逻辑来获取变量 $QWENPAW_ROOT：
+执行以下脚本逻辑来获取变量 $DRCLAW_ROOT：
 
 ```bash
 # 获取二进制绝对路径
-QWENPAW_PATH=$(which qwenpaw 2>/dev/null || whereis qwenpaw | awk '{print $2}')
+DRCLAW_PATH=$(which drclaw 2>/dev/null || which qwenpaw 2>/dev/null || whereis drclaw | awk '{print $2}')
 
-# 逻辑推导：如果路径包含 .qwenpaw/bin/qwenpaw，则根目录在其上三层
-# 例如：/path/to/QwenPaw/.qwenpaw/bin/qwenpaw -> /path/to/QwenPaw
-if [[ "$QWENPAW_PATH" == *".qwenpaw/bin/qwenpaw" ]]; then
-    QWENPAW_ROOT=$(echo "$QWENPAW_PATH" | sed 's/\/\.qwenpaw\/bin\/qwenpaw//')
+# 逻辑推导：如果路径包含 .drclaw/bin/drclaw，则根目录在其上三层
+# 例如：/path/to/Dr.Claw/.drclaw/bin/drclaw -> /path/to/Dr.Claw
+if [[ "$DRCLAW_PATH" == *".drclaw/bin/drclaw" ]]; then
+    DRCLAW_ROOT=$(echo "$DRCLAW_PATH" | sed 's/\/\.drclaw\/bin\/drclaw//')
 else
     # 兜底：尝试获取所在目录的父目录
-    QWENPAW_ROOT=$(dirname $(dirname "$QWENPAW_PATH") 2>/dev/null || echo ".")
+    DRCLAW_ROOT=$(dirname $(dirname "$DRCLAW_PATH") 2>/dev/null || echo ".")
 fi
 
-echo "Detected QwenPaw Root: $QWENPAW_ROOT"
+echo "Detected Dr.Claw Root: $DRCLAW_ROOT"
 ```
 
 验证并列出文档目录：
-使用推导出的 $QWENPAW_ROOT 定位文档：
+使用推导出的 $DRCLAW_ROOT 定位文档：
 
 ```bash
 # 组合标准文档路径
-DOCS_DIR="$QWENPAW_ROOT/website/public/docs/"
+DOCS_DIR="$DRCLAW_ROOT/docs/"
 
 # 检查路径是否存在并列出文件
 if [ -d "$DOCS_DIR" ]; then
     find "$DOCS_DIR" -type f -name "*.md" | head -n 100
 else
     # 如果推导路径不对，执行全局模糊搜索
-    find "$QWENPAW_ROOT" -type d -name "docs" | grep "website/public/docs"
+    find "$DRCLAW_ROOT" -type d -name "docs" | grep "docs"
 fi
 ```
 **如果项目文档不存在，搜索工作目录**
 
-如果还是找不到文档，搜索 qwenpaw 安装路径下的可用文档内容：
+如果还是找不到文档，搜索 drclaw 安装路径下的可用文档内容：
 
 ```bash
 # 寻找 faq.en.md 或 config.zh.md 等特征文件
@@ -131,13 +131,13 @@ find $DOCS_DIR -type f -name "*.md"
 
 语言要求：回答语言必须与用户提问语言一致（中文问就中文答，英文问就英文答）。
 
-### 第五步（可选）：官网检索
+### 第五步（可选）：仓库文档检索
 
-若前面步骤无法完成（本地无文档、文档缺失、信息不足），使用官网作为兜底：
+若前面步骤无法完成（本地无文档、文档缺失、信息不足），使用仓库 docs 作为兜底：
 
-- http://qwenpaw.agentscope.io/
+- https://github.com/ProjectDrClaw/DrClawAgent/tree/main/docs
 
-基于官网可获得内容继续回答，并在答案中明确说明该结论来自官网文档。
+基于可获得内容继续回答，并在答案中明确说明该结论来自仓库文档。
 
 ## 输出质量要求
 

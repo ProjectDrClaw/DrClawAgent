@@ -8,8 +8,8 @@ Page custom QWENPAW_CLI_PATH_PAGE QWENPAW_CLI_PATH_PAGE_LEAVE
 
 !macro QWENPAW_UPDATE_CLI_PATH ACTION
   InitPluginsDir
-  File /oname=$PLUGINSDIR\qwenpaw-update-path.ps1 "..\..\..\..\nsis\update-qwenpaw-path.ps1"
-  nsExec::ExecToStack `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\qwenpaw-update-path.ps1" -Action "${ACTION}" -Path "$INSTDIR\binaries\qwenpaw-backend"`
+  File /oname=$PLUGINSDIR\drclaw-update-path.ps1 "..\..\..\..\nsis\update-drclaw-path.ps1"
+  nsExec::ExecToStack `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\drclaw-update-path.ps1" -Action "${ACTION}" -Path "$INSTDIR\binaries\drclaw-backend"`
   Pop $0
   Pop $1
 !macroend
@@ -18,7 +18,7 @@ Page custom QWENPAW_CLI_PATH_PAGE QWENPAW_CLI_PATH_PAGE_LEAVE
   ${If} $QwenPawCliPathState == 0
     DetailPrint "$(qwenpawCliPathSkipped)"
   ${Else}
-    IfFileExists "$INSTDIR\binaries\qwenpaw-backend\qwenpaw.exe" 0 qwenpaw_cli_path_missing
+    IfFileExists "$INSTDIR\binaries\drclaw-backend\drclaw.exe" 0 drclaw_cli_path_missing
     !insertmacro QWENPAW_UPDATE_CLI_PATH "Add"
     ${If} $0 == 0
       DetailPrint "$(qwenpawCliPathAdded)"
@@ -27,7 +27,7 @@ Page custom QWENPAW_CLI_PATH_PAGE QWENPAW_CLI_PATH_PAGE_LEAVE
       DetailPrint "$1"
     ${EndIf}
     Goto qwenpaw_cli_path_done
-    qwenpaw_cli_path_missing:
+    drclaw_cli_path_missing:
       DetailPrint "$(qwenpawCliPathMissing)"
     qwenpaw_cli_path_done:
   ${EndIf}
@@ -43,15 +43,15 @@ Page custom QWENPAW_CLI_PATH_PAGE QWENPAW_CLI_PATH_PAGE_LEAVE
 
 !macro QWENPAW_INSTALL_DEBUG_LAUNCHER
   SetOutPath "$INSTDIR"
-  File /oname=qwenpaw-desktop-debug.cmd "..\..\..\..\nsis\qwenpaw-desktop-debug.cmd"
-  File /oname=qwenpaw-desktop-debug.ps1 "..\..\..\..\nsis\qwenpaw-desktop-debug.ps1"
-  CreateShortcut "$SMPROGRAMS\QwenPaw Desktop (Debug).lnk" "$INSTDIR\qwenpaw-desktop-debug.cmd" "" "$INSTDIR\qwenpaw-desktop.exe" 0
+  File /oname=drclaw-desktop-debug.cmd "..\..\..\..\nsis\drclaw-desktop-debug.cmd"
+  File /oname=drclaw-desktop-debug.ps1 "..\..\..\..\nsis\drclaw-desktop-debug.ps1"
+  CreateShortcut "$SMPROGRAMS\Dr.Claw Desktop (Debug).lnk" "$INSTDIR\drclaw-desktop-debug.cmd" "" "$INSTDIR\drclaw-desktop.exe" 0
 !macroend
 
 !macro QWENPAW_REMOVE_DEBUG_LAUNCHER
-  Delete "$SMPROGRAMS\QwenPaw Desktop (Debug).lnk"
-  Delete "$INSTDIR\qwenpaw-desktop-debug.cmd"
-  Delete "$INSTDIR\qwenpaw-desktop-debug.ps1"
+  Delete "$SMPROGRAMS\Dr.Claw Desktop (Debug).lnk"
+  Delete "$INSTDIR\drclaw-desktop-debug.cmd"
+  Delete "$INSTDIR\drclaw-desktop-debug.ps1"
 !macroend
 
 Function QWENPAW_CLI_PATH_PAGE

@@ -11,6 +11,7 @@ import {
 } from "./useMarketInstall";
 import type { MarketResult } from "../../../api/modules/market";
 import { ResultCard, DetailDrawer, QueueItem, EmptyState } from "./components";
+import { sourceLabel } from "./components/SkillIcon";
 import styles from "./index.module.less";
 
 function getCardKey(item: MarketResult) {
@@ -103,7 +104,7 @@ const ProviderChips = memo(function ProviderChips({
               aria-disabled={!p.available}
             >
               {active && <Check size={12} strokeWidth={3} />}
-              {p.label}
+              {sourceLabel(p.key) || p.label}
             </span>
           </Tooltip>
         );
@@ -220,7 +221,7 @@ export function MarketPanel({
           !p.supports_browse &&
           market.selectedProviderKeys.has(p.key),
       )
-      .map((p) => p.label)
+      .map((p) => sourceLabel(p.key) || p.label)
       .join(", ");
   }, [
     market.query,
