@@ -1,14 +1,11 @@
+# Dr.Claw: 社区 Bot 已禁用（仅手动）。
 name: First-Time Contributor Welcome
 
 on:
-  pull_request_target:
-    types: [closed]
+  workflow_dispatch:
 
 jobs:
   welcome-comment:
-    if: >-
-      github.event.pull_request.merged == true &&
-      contains(toJSON(github.event.pull_request.labels.*.name), 'first-time-contributor')
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write

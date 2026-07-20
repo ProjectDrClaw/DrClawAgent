@@ -276,6 +276,22 @@ class FeishuConfig(BaseChannelConfig):
     share_session_in_group: bool = False
 
 
+class OpenIMConfig(BaseChannelConfig):
+    """OpenIM channel: api_url, app_id, app_secret; optional ws_url,
+    admin_user_id, platform_id.
+
+    Receives and sends via outbound WebSocket long connection.
+    app_id is the OpenIM robot userID; app_secret is share.yaml secret.
+    """
+
+    api_url: str = ""
+    app_id: str = ""
+    app_secret: str = ""
+    ws_url: str = ""
+    admin_user_id: str = "imAdmin"
+    platform_id: int = 7
+
+
 class QQConfig(BaseChannelConfig):
     app_id: str = ""
     client_secret: str = ""
@@ -522,6 +538,7 @@ class ChannelConfig(BaseModel):
     wechat: WeChatConfig = WeChatConfig()
     slack: SlackConfig = SlackConfig()
     onebot: OneBotConfig = OneBotConfig()
+    openim: OpenIMConfig = OpenIMConfig()
 
     @model_validator(mode="before")
     @classmethod
@@ -2225,6 +2242,7 @@ ChannelConfigUnion = Union[
     DiscordConfig,
     DingTalkConfig,
     FeishuConfig,
+    OpenIMConfig,
     QQConfig,
     TelegramConfig,
     MattermostConfig,

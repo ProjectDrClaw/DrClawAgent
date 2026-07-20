@@ -185,7 +185,7 @@ describe("openExternalLink", () => {
   });
 
   it("does not add auth query parameters to generic external links", () => {
-    localStorage.setItem("qwenpaw_auth_token", "tok");
+    localStorage.setItem("drclaw_auth_token", "tok");
 
     openExternalLink("https://evil.example/api/foo");
 
@@ -209,7 +209,7 @@ describe("openExternalLink", () => {
   it("downloads Tauri files with headers through the native backend command", async () => {
     isTauri.mockReturnValue(true);
     save.mockResolvedValue("C:\\Downloads\\server.zip");
-    localStorage.setItem("qwenpaw_auth_token", "tok");
+    localStorage.setItem("drclaw_auth_token", "tok");
 
     await expect(
       downloadFileFromUrl("/api/workspace/download", "workspace.zip", {
@@ -341,7 +341,7 @@ describe("openExternalLink", () => {
   });
 
   it("does not add auth query parameters to external API-shaped downloads", async () => {
-    localStorage.setItem("qwenpaw_auth_token", "tok");
+    localStorage.setItem("drclaw_auth_token", "tok");
     fetchMock.mockResolvedValue(new Response("zip"));
 
     await expect(

@@ -42,6 +42,7 @@ BUILTIN_CHANNEL_TYPES = (
     "slack",
     "xiaoyi",
     "yuanbao",
+    "openim",
 )
 
 # ChannelType is str to allow plugin channels; built-in set above.

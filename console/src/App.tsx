@@ -31,7 +31,7 @@ import { UpdateTakeoverGate } from "./components/UpdateTakeoverPage";
 import { Suspense } from "react";
 import { lazyImportWithRetry } from "./utils/lazyWithRetry";
 
-const LoginPage = lazyImportWithRetry("./pages/Login/index");
+const LoginPage = lazyImportWithRetry("./pages/Login/drclaw/index");
 import { authApi } from "./api/modules/auth";
 import { languageApi } from "./api/modules/language";
 import { useUploadLimitStore } from "./stores/uploadLimitStore";
@@ -131,9 +131,9 @@ function AppInner() {
   const { isDark } = useTheme();
   const { loading: pluginsLoading } = usePlugins();
   const selectedTheme = isDark ? bailianDarkTheme : bailianTheme;
-  const lang = i18n.resolvedLanguage || i18n.language || "en";
+  const lang = i18n.resolvedLanguage || i18n.language || "zh";
   const [antdLocale, setAntdLocale] = useState<Locale>(
-    antdLocaleMap[lang] ?? enUS,
+    antdLocaleMap[lang] ?? zhCN,
   );
 
   useEffect(() => {
@@ -156,12 +156,12 @@ function AppInner() {
   useEffect(() => {
     const handleLanguageChanged = (lng: string) => {
       const shortLng = lng.split("-")[0];
-      setAntdLocale(antdLocaleMap[shortLng] ?? enUS);
-      dayjs.locale(dayjsLocaleMap[shortLng] ?? "en");
+      setAntdLocale(antdLocaleMap[shortLng] ?? zhCN);
+      dayjs.locale(dayjsLocaleMap[shortLng] ?? "zh-cn");
     };
 
     // Set initial dayjs locale
-    dayjs.locale(dayjsLocaleMap[lang.split("-")[0]] ?? "en");
+    dayjs.locale(dayjsLocaleMap[lang.split("-")[0]] ?? "zh-cn");
 
     i18n.on("languageChanged", handleLanguageChanged);
     return () => {
@@ -198,7 +198,8 @@ function AppInner() {
             ? antdTheme.darkAlgorithm
             : antdTheme.defaultAlgorithm,
           token: {
-            colorPrimary: "#FF7F16",
+            colorPrimary: "#2657C9",
+            colorTextOnPrimary: "#ffffff",
           },
         }}
       >

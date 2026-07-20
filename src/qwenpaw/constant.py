@@ -1,7 +1,8 @@
-# -*- coding: utf-8 -*-
-import os
+﻿# -*- coding: utf-8 -*-
 from pathlib import Path
 from dotenv import load_dotenv
+
+from .env_resolve import get_env as _resolve_env
 
 # Load .env file from project root before reading any env vars
 _env_path = Path(__file__).resolve().parent.parent.parent / ".env"
@@ -10,25 +11,14 @@ if _env_path.exists():
 
 
 def _get_env(key: str, default: str = "") -> str:
-    """Look up an env var with automatic COPAW_ legacy fallback.
-
-    Primary key is always used as-is.  When the primary key starts with
-    ``QWENPAW_``, the corresponding ``COPAW_`` variant is transparently
-    checked as a fallback so that existing deployments keep working.
-    """
-    if key in os.environ:
-        return os.environ[key]
-    if key.startswith("QWENPAW_"):
-        legacy_key = "COPAW_" + key[len("QWENPAW_") :]
-        if legacy_key in os.environ:
-            return os.environ[legacy_key]
-    return default
+    """Look up env var: DRCLAW_* > QWENPAW_* > COPAW_*."""
+    return _resolve_env(key, default)
 
 
 class EnvVarLoader:
     """Utility to load and parse environment variables with type safety
-    and defaults.  Pass QWENPAW_* keys; COPAW_* legacy variants are
-    checked automatically as a fallback inside _get_env.
+    and defaults.  Pass DRCLAW_* keys; QWENPAW_* / COPAW_* fallbacks are
+    resolved automatically inside _get_env.
     """
 
     @staticmethod
@@ -87,7 +77,7 @@ class EnvVarLoader:
 
 
 CUSTOM_AGENT_STARTUP_CONCURRENCY_ENV = (
-    "QWENPAW_CUSTOM_AGENT_STARTUP_CONCURRENCY"
+    "DRCLAW_CUSTOM_AGENT_STARTUP_CONCURRENCY"
 )
 DEFAULT_CUSTOM_AGENT_STARTUP_CONCURRENCY = 5
 CUSTOM_AGENT_STARTUP_CONCURRENCY = EnvVarLoader.get_int(
@@ -98,22 +88,26 @@ CUSTOM_AGENT_STARTUP_CONCURRENCY = EnvVarLoader.get_int(
 
 
 # WORKING_DIR priority:
-# 1. QWENPAW_WORKING_DIR / COPAW_WORKING_DIR env var is set → use it
-# 2. ~/.copaw exists (legacy installation) → use it as-is
-# 3. Default → ~/.qwenpaw
-_explicit_working_dir = _get_env("QWENPAW_WORKING_DIR")
+# 1. DRCLAW_WORKING_DIR (or QWENPAW_/COPAW_ legacy) env var is set 鈫?use it
+# 2. ~/.copaw exists (legacy installation) 鈫?use it as-is
+# 3. ~/.qwenpaw exists (legacy installation) 鈫?use it as-is
+# 4. Default 鈫?~/.drclaw
+_explicit_working_dir = _get_env("DRCLAW_WORKING_DIR")
 if _explicit_working_dir:
     WORKING_DIR = Path(_explicit_working_dir).expanduser().resolve()
 else:
     _legacy_copaw_dir = Path("~/.copaw").expanduser()
+    _legacy_qwenpaw_dir = Path("~/.qwenpaw").expanduser()
     if _legacy_copaw_dir.exists():
         WORKING_DIR = _legacy_copaw_dir.resolve()
+    elif _legacy_qwenpaw_dir.exists():
+        WORKING_DIR = _legacy_qwenpaw_dir.resolve()
     else:
-        WORKING_DIR = Path("~/.qwenpaw").expanduser().resolve()
+        WORKING_DIR = Path("~/.drclaw").expanduser().resolve()
 SECRET_DIR = (
     Path(
         EnvVarLoader.get_str(
-            "QWENPAW_SECRET_DIR",
+            "DRCLAW_SECRET_DIR",
             f"{WORKING_DIR}.secret",
         ),
     )
@@ -122,12 +116,12 @@ SECRET_DIR = (
 )
 
 # Env key for overriding the OS keychain account used for the master key.
-KEYRING_ACCOUNT_ENV = "QWENPAW_KEYRING_ACCOUNT"
+KEYRING_ACCOUNT_ENV = "DRCLAW_KEYRING_ACCOUNT"
 
-PROJECT_NAME = "QwenPaw"
+PROJECT_NAME = "DrClaw"
 
 # Message metadata tags shared across agent middleware and memory managers.
-QWENPAW_MESSAGE_TAG_KEY = "qwenpaw_tag"
+QWENPAW_MESSAGE_TAG_KEY = "DRCLAW_tag"
 AUTO_MEMORY_SEARCH_BLOCK_IDS_KEY = "auto_memory_search_block_ids"
 EXTERNAL_USER_QUERY_MESSAGE_TAG = "external_user_query"
 AUTO_CONTINUE_MESSAGE_TAG = "auto_continue"
@@ -173,9 +167,9 @@ DEFAULT_MEDIA_DIR = WORKING_DIR / "media"
 # Default local provider directory
 DEFAULT_LOCAL_PROVIDER_DIR = WORKING_DIR / "local_models"
 
-JOBS_FILE = EnvVarLoader.get_str("QWENPAW_JOBS_FILE", "jobs.json")
+JOBS_FILE = EnvVarLoader.get_str("DRCLAW_JOBS_FILE", "jobs.json")
 
-CHATS_FILE = EnvVarLoader.get_str("QWENPAW_CHATS_FILE", "chats.json")
+CHATS_FILE = EnvVarLoader.get_str("DRCLAW_CHATS_FILE", "chats.json")
 
 
 # Builtin Q&A helper profile.  agent_id keeps "QwenPaw" prefix for existing
@@ -197,7 +191,7 @@ def _discover_agent_languages() -> frozenset[str]:
 
 SUPPORTED_AGENT_LANGUAGES: frozenset[str] = _discover_agent_languages()
 
-BUILTIN_QA_AGENT_ID = "QwenPaw_QA_Agent_0.2"
+BUILTIN_QA_AGENT_ID = "DRCLAW_QA_Agent_0.2"
 BUILTIN_QA_AGENT_NAME = "QA Agent"
 # Default skills when the builtin QA workspace is first created only.
 BUILTIN_QA_AGENT_SKILL_NAMES: tuple[str, ...] = (
@@ -205,19 +199,19 @@ BUILTIN_QA_AGENT_SKILL_NAMES: tuple[str, ...] = (
     "QA_source_index",
 )
 
-# CoPaw-era builtin QA; may remain in config.json — disabled when the current
+# CoPaw-era builtin QA; may remain in config.json 鈥?disabled when the current
 # ``BUILTIN_QA_AGENT_ID`` profile is first created (see ``migration``), not
 # every startup, so users can re-enable this id if they want.
 LEGACY_QA_AGENT_ID = "CoPaw_QA_Agent_0.1beta1"
 
 TOKEN_USAGE_FILE = EnvVarLoader.get_str(
-    "QWENPAW_TOKEN_USAGE_FILE",
+    "DRCLAW_TOKEN_USAGE_FILE",
     "token_usage.json",
 )
 
-CONFIG_FILE = EnvVarLoader.get_str("QWENPAW_CONFIG_FILE", "config.json")
+CONFIG_FILE = EnvVarLoader.get_str("DRCLAW_CONFIG_FILE", "config.json")
 
-HEARTBEAT_FILE = EnvVarLoader.get_str("QWENPAW_HEARTBEAT_FILE", "HEARTBEAT.md")
+HEARTBEAT_FILE = EnvVarLoader.get_str("DRCLAW_HEARTBEAT_FILE", "HEARTBEAT.md")
 HEARTBEAT_DEFAULT_EVERY = "6h"
 HEARTBEAT_DEFAULT_TARGET = "main"
 HEARTBEAT_DEFAULT_TIMEOUT_SECONDS = 300
@@ -227,27 +221,32 @@ HEARTBEAT_TARGET_INBOX = "inbox"
 
 # Debug history file for /dump_history and /load_history commands
 DEBUG_HISTORY_FILE = EnvVarLoader.get_str(
-    "QWENPAW_DEBUG_HISTORY_FILE",
+    "DRCLAW_DEBUG_HISTORY_FILE",
     "debug_history.jsonl",
 )
 MAX_LOAD_HISTORY_COUNT = 10000
 
 # Env key for app log level (used by CLI and app load for reload child).
-LOG_LEVEL_ENV = "QWENPAW_LOG_LEVEL"
+LOG_LEVEL_ENV = "DRCLAW_LOG_LEVEL"
 
 # Fixed desktop backend port. When set, get_stable_port() uses this port
-# instead of auto-assigning.
-QWENPAW_DESKTOP_PORT = _get_env("QWENPAW_DESKTOP_PORT")
+# instead of auto-assigning. When unset, desktop backends default to 8088.
+DEFAULT_DESKTOP_PORT = 8088
+# Default bind address for desktop backends (Tauri sidecar and ``drclaw desktop``).
+DEFAULT_DESKTOP_API_HOST = "0.0.0.0"
+DRCLAW_DESKTOP_PORT = _get_env("DRCLAW_DESKTOP_PORT")
+# 兼容旧代码导入
+QWENPAW_DESKTOP_PORT = DRCLAW_DESKTOP_PORT
 
 # Env to indicate running inside a container (e.g. Docker). Set to 1/true/yes.
 RUNNING_IN_CONTAINER = EnvVarLoader.get_bool(
-    "QWENPAW_RUNNING_IN_CONTAINER",
+    "DRCLAW_RUNNING_IN_CONTAINER",
     False,
 )
 
 # Timeout in seconds for checking if a provider is reachable.
 MODEL_PROVIDER_CHECK_TIMEOUT = EnvVarLoader.get_float(
-    "QWENPAW_MODEL_PROVIDER_CHECK_TIMEOUT",
+    "DRCLAW_MODEL_PROVIDER_CHECK_TIMEOUT",
     5.0,
     min_value=0,
     allow_inf=False,
@@ -258,7 +257,7 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH_ENV = "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"
 
 # When True, expose /docs, /redoc, /openapi.json
 # (dev only; keep False in prod).
-DOCS_ENABLED = EnvVarLoader.get_bool("QWENPAW_OPENAPI_DOCS", False)
+DOCS_ENABLED = EnvVarLoader.get_bool("DRCLAW_OPENAPI_DOCS", False)
 
 # Memory directory
 MEMORY_DIR = WORKING_DIR / "memory"
@@ -267,7 +266,7 @@ MEMORY_DIR = WORKING_DIR / "memory"
 BACKUP_DIR = (
     Path(
         EnvVarLoader.get_str(
-            "QWENPAW_BACKUP_DIR",
+            "DRCLAW_BACKUP_DIR",
             f"{WORKING_DIR}.backups",
         ),
     )
@@ -283,28 +282,28 @@ PLUGINS_DIR = WORKING_DIR / "plugins"
 MODELS_DIR = WORKING_DIR / "models"
 
 MEMORY_COMPACT_KEEP_RECENT = EnvVarLoader.get_int(
-    "QWENPAW_MEMORY_COMPACT_KEEP_RECENT",
+    "DRCLAW_MEMORY_COMPACT_KEEP_RECENT",
     3,
     min_value=0,
 )
 
 # Memory compaction configuration
 MEMORY_COMPACT_RATIO = EnvVarLoader.get_float(
-    "QWENPAW_MEMORY_COMPACT_RATIO",
+    "DRCLAW_MEMORY_COMPACT_RATIO",
     0.7,
     min_value=0,
     allow_inf=False,
 )
 
-# CORS configuration — comma-separated list of allowed origins for dev mode.
+# CORS configuration 鈥?comma-separated list of allowed origins for dev mode.
 # Example: QWENPAW_CORS_ORIGINS="http://localhost:5173,http://127.0.0.1:5173"
 # When unset, CORS middleware is not applied.
-CORS_ORIGINS = EnvVarLoader.get_str("QWENPAW_CORS_ORIGINS", "").strip()
+CORS_ORIGINS = EnvVarLoader.get_str("DRCLAW_CORS_ORIGINS", "*").strip()
 
 # Upload size limit (MB).  None = no limit.
 UPLOAD_MAX_SIZE_MB: int | None = (
     int(v)
-    if (v := EnvVarLoader.get_str("QWENPAW_UPLOAD_MAX_SIZE_MB", ""))
+    if (v := EnvVarLoader.get_str("DRCLAW_UPLOAD_MAX_SIZE_MB", ""))
     .strip()
     .isdigit()
     else None
@@ -312,19 +311,19 @@ UPLOAD_MAX_SIZE_MB: int | None = (
 
 # LLM API retry configuration
 LLM_MAX_RETRIES = EnvVarLoader.get_int(
-    "QWENPAW_LLM_MAX_RETRIES",
+    "DRCLAW_LLM_MAX_RETRIES",
     3,
     min_value=0,
 )
 
 LLM_BACKOFF_BASE = EnvVarLoader.get_float(
-    "QWENPAW_LLM_BACKOFF_BASE",
+    "DRCLAW_LLM_BACKOFF_BASE",
     1.0,
     min_value=0.1,
 )
 
 LLM_BACKOFF_CAP = EnvVarLoader.get_float(
-    "QWENPAW_LLM_BACKOFF_CAP",
+    "DRCLAW_LLM_BACKOFF_CAP",
     10.0,
     min_value=0.5,
 )
@@ -334,18 +333,18 @@ LLM_BACKOFF_CAP = EnvVarLoader.get_float(
 # the semaphore.  Tune to your API quota: start conservatively at 3-5 and
 # increase (e.g. OpenAI Tier 1 ~500 QPM allows ~25 at 3 s/call average).
 LLM_MAX_CONCURRENT = EnvVarLoader.get_int(
-    "QWENPAW_LLM_MAX_CONCURRENT",
+    "DRCLAW_LLM_MAX_CONCURRENT",
     10,
     min_value=1,
 )
 
 # Maximum queries per minute (QPM), enforced via a 60-second sliding window.
 # New requests that would exceed this limit will wait before being dispatched
-# to the API — proactively preventing 429s rather than reacting to them.
+# to the API 鈥?proactively preventing 429s rather than reacting to them.
 # 0 = unlimited (disabled).
-# Examples: Anthropic Tier-1 ≈ 50 QPM; OpenAI Tier-1 ≈ 500 QPM.
+# Examples: Anthropic Tier-1 鈮?50 QPM; OpenAI Tier-1 鈮?500 QPM.
 LLM_MAX_QPM = EnvVarLoader.get_int(
-    "QWENPAW_LLM_MAX_QPM",
+    "DRCLAW_LLM_MAX_QPM",
     600,
     min_value=0,
 )
@@ -353,7 +352,7 @@ LLM_MAX_QPM = EnvVarLoader.get_int(
 # Default global pause duration (seconds) applied to all waiters when a 429
 # is received.  Overridden by the API's Retry-After header when present.
 LLM_RATE_LIMIT_PAUSE = EnvVarLoader.get_float(
-    "QWENPAW_LLM_RATE_LIMIT_PAUSE",
+    "DRCLAW_LLM_RATE_LIMIT_PAUSE",
     5.0,
     min_value=1.0,
 )
@@ -361,7 +360,7 @@ LLM_RATE_LIMIT_PAUSE = EnvVarLoader.get_float(
 # Random jitter range (seconds) added on top of the pause remaining time so
 # concurrent waiters stagger their wake-up and avoid a new burst.
 LLM_RATE_LIMIT_JITTER = EnvVarLoader.get_float(
-    "QWENPAW_LLM_RATE_LIMIT_JITTER",
+    "DRCLAW_LLM_RATE_LIMIT_JITTER",
     1.0,
     min_value=0.0,
 )
@@ -369,7 +368,7 @@ LLM_RATE_LIMIT_JITTER = EnvVarLoader.get_float(
 # Maximum time (seconds) a caller will wait for a semaphore slot before
 # giving up with a RuntimeError rather than blocking indefinitely.
 LLM_ACQUIRE_TIMEOUT = EnvVarLoader.get_float(
-    "QWENPAW_LLM_ACQUIRE_TIMEOUT",
+    "DRCLAW_LLM_ACQUIRE_TIMEOUT",
     300.0,
     min_value=10.0,
 )
@@ -378,7 +377,7 @@ LLM_ACQUIRE_TIMEOUT = EnvVarLoader.get_float(
 try:
     TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS = max(
         float(
-            _get_env("QWENPAW_TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS", "300"),
+            _get_env("DRCLAW_TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS", "300"),
         ),
         1.0,
     )
@@ -392,7 +391,7 @@ except (TypeError, ValueError):
 try:
     TOOL_GUARD_APPROVAL_HEARTBEAT_INTERVAL = max(
         float(
-            _get_env("QWENPAW_TOOL_GUARD_APPROVAL_HEARTBEAT_INTERVAL", "15"),
+            _get_env("DRCLAW_TOOL_GUARD_APPROVAL_HEARTBEAT_INTERVAL", "15"),
         ),
         5.0,
     )

@@ -6,7 +6,8 @@ so that the browser origin (http://127.0.0.1:{port}) stays stable and
 localStorage data (selected agent, plugin flags, etc.) survives.
 
 Supports user-configured fixed ports via the
-QWENPAW_DESKTOP_PORT environment variable.
+DRCLAW_DESKTOP_PORT environment variable. When unset, desktop backends
+default to port 8088.
 """
 
 from __future__ import annotations
@@ -17,9 +18,34 @@ import socket
 import sys
 from pathlib import Path
 
-from ..constant import QWENPAW_DESKTOP_PORT
+from ..constant import (
+    DEFAULT_DESKTOP_API_HOST,
+    DEFAULT_DESKTOP_PORT,
+    DRCLAW_DESKTOP_PORT,
+)
+from ..env_resolve import drclaw_env, get_env
 
 logger = logging.getLogger(__name__)
+
+DESKTOP_API_HOST_ENV = drclaw_env("DESKTOP_API_HOST")
+
+
+def resolve_desktop_bind_host() -> str:
+    """Resolve desktop backend bind host from ``DRCLAW_DESKTOP_API_HOST``."""
+    host = get_env(DESKTOP_API_HOST_ENV, DEFAULT_DESKTOP_API_HOST).strip()
+    return host or DEFAULT_DESKTOP_API_HOST
+
+
+def desktop_ui_host(bind_host: str) -> str:
+    """Return the localhost URL host when *bind_host* is all-interfaces."""
+    return "127.0.0.1" if bind_host == "0.0.0.0" else bind_host
+
+
+def persist_desktop_last_api(bind_host: str, port: int) -> None:
+    """Persist last API coordinates for CLI helpers and other local tools."""
+    from ..config.utils import write_last_api
+
+    write_last_api(desktop_ui_host(bind_host), port)
 
 
 def read_last_port(port_file: str | Path) -> int | None:
@@ -119,24 +145,25 @@ def get_stable_port(
 
     The chosen port is always persisted back to *port_file*.
 
-    If QWENPAW_DESKTOP_PORT environment variable is set, it takes priority
-    and the port is fixed (not persisted).
+    If DRCLAW_DESKTOP_PORT environment variable is set, it takes priority.
+    Otherwise reuses the persisted port when available, then falls back to
+    DEFAULT_DESKTOP_PORT (8088), and finally a random free port.
     """
     # Check for user-configured port via environment variable
-    if QWENPAW_DESKTOP_PORT:
+    if DRCLAW_DESKTOP_PORT:
         try:
-            port = int(QWENPAW_DESKTOP_PORT)
+            port = int(DRCLAW_DESKTOP_PORT)
         except (TypeError, ValueError):
             logger.warning(
-                "QWENPAW_DESKTOP_PORT=%r is not a valid "
+                "DRCLAW_DESKTOP_PORT=%r is not a valid "
                 "integer, falling back to auto-assign",
-                QWENPAW_DESKTOP_PORT,
+                DRCLAW_DESKTOP_PORT,
             )
             port = None
         if port is not None:
             if not 1024 <= port <= 65535:
                 logger.warning(
-                    "QWENPAW_DESKTOP_PORT=%d out of range "
+                    "DRCLAW_DESKTOP_PORT=%d out of range "
                     "1024-65535, falling back to auto-assign",
                     port,
                 )
@@ -144,12 +171,12 @@ def get_stable_port(
                 sock = try_bind_port(host, port)
                 if sock:
                     logger.info(
-                        "Using QWENPAW_DESKTOP_PORT: %d",
+                        "Using DRCLAW_DESKTOP_PORT: %d",
                         port,
                     )
                     return port, sock
                 logger.warning(
-                    "QWENPAW_DESKTOP_PORT=%d is "
+                    "DRCLAW_DESKTOP_PORT=%d is "
                     "unavailable, falling back "
                     "to auto-assign",
                     port,
@@ -164,11 +191,22 @@ def get_stable_port(
             logger.debug("Reusing previous desktop port %d", last_port)
             return last_port, reused_socket
         logger.debug(
-            "Previous port %d unavailable, falling back to random",
+            "Previous port %d unavailable, falling back to default %d",
             last_port,
+            DEFAULT_DESKTOP_PORT,
         )
 
+    sock = try_bind_port(host, DEFAULT_DESKTOP_PORT)
+    if sock:
+        logger.info("Using default desktop port %d", DEFAULT_DESKTOP_PORT)
+        write_port_file(port_file, DEFAULT_DESKTOP_PORT)
+        return DEFAULT_DESKTOP_PORT, sock
+
     port = find_free_port(host)
-    logger.debug("Allocated new desktop port %d", port)
+    logger.warning(
+        "Default desktop port %d unavailable, allocated random port %d",
+        DEFAULT_DESKTOP_PORT,
+        port,
+    )
     write_port_file(port_file, port)
     return port, None

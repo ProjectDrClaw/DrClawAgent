@@ -275,8 +275,9 @@ def _check_web_auth(base: str) -> tuple[bool, str]:
             f"        1) Start `qwenpaw app`, open {base}/ in a browser.\n"
             "        2) Complete registration (single user) on the login "
             "page.\n"
-            "        For automation, set QWENPAW_AUTH_USERNAME and "
-            "QWENPAW_AUTH_PASSWORD (legacy COPAW_* names still work) — the "
+            "        For automation, set DRCLAW_AUTH_USERNAME and "
+            "DRCLAW_AUTH_PASSWORD (legacy QWENPAW_*/COPAW_* names still "
+            "work) — the "
             "server creates the user on startup.",
         )
     return (

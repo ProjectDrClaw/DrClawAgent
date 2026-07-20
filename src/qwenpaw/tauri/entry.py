@@ -12,6 +12,7 @@ import sys
 
 import click
 
+from qwenpaw.env_resolve import drclaw_env, get_env, pop_env
 from qwenpaw.tauri.env import (
     DESKTOP_APP_ENV,
     DESKTOP_CORS_ORIGINS_ENV,
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def _is_frozen_desktop() -> bool:
     return bool(getattr(sys, "frozen", False)) or (
-        os.environ.get(DESKTOP_APP_ENV) == "1"
+        get_env(DESKTOP_APP_ENV) == "1"
     )
 
 
@@ -49,7 +50,7 @@ def _looks_like_python_invocation(args: Sequence[str]) -> bool:
 
 def _bundled_python() -> str:
     """Path to the bundled standalone CPython, or ``""`` if missing."""
-    python = (os.environ.get("QWENPAW_DESKTOP_PY_RUNTIME") or "").strip()
+    python = get_env(drclaw_env("DESKTOP_PY_RUNTIME"), "").strip()
     if python and os.path.isfile(python):
         return python
     return ""
@@ -59,7 +60,7 @@ def _child_env_with_plugin_site(env: "dict | None") -> "dict | None":
     """Return *env* (or a copy of ``os.environ``) with the plugin site dir
     prepended to ``PYTHONPATH`` so the bundled CPython can import plugin deps.
     """
-    site_dir = (os.environ.get("QWENPAW_PLUGIN_SITE") or "").strip()
+    site_dir = get_env(drclaw_env("PLUGIN_SITE"), "").strip()
     if not site_dir:
         return env
     base = dict(os.environ if env is None else env)
@@ -101,7 +102,7 @@ def _reexec_as_bundled_python(args: Sequence[str]) -> None:
     Deep fallback for spawn paths that bypass ``subprocess`` (``os.execv``,
     shell strings, etc.) and reach this binary's ``main()`` with Python-style
     argv. Re-exec the bundled standalone CPython with the same arguments, with
-    plugin-installed deps (``QWENPAW_PLUGIN_SITE``) importable.
+    plugin-installed deps (``DRCLAW_PLUGIN_SITE``) importable.
     """
     python = _bundled_python()
     if not python:
@@ -112,7 +113,7 @@ def _reexec_as_bundled_python(args: Sequence[str]) -> None:
             file=sys.stderr,
         )
         raise SystemExit(2)
-    site_dir = (os.environ.get("QWENPAW_PLUGIN_SITE") or "").strip()
+    site_dir = get_env(drclaw_env("PLUGIN_SITE"), "").strip()
     if site_dir:
         existing = os.environ.get("PYTHONPATH", "")
         os.environ["PYTHONPATH"] = (
@@ -178,7 +179,7 @@ def _ensure_qwenpaw_app_not_loaded() -> None:
 def _sync_loaded_qwenpaw_constant_cors_origins() -> None:
     constant_module = sys.modules.get("qwenpaw.constant")
     if constant_module is not None:
-        constant_module.CORS_ORIGINS = os.environ.get(
+        constant_module.CORS_ORIGINS = get_env(
             DESKTOP_CORS_ORIGINS_ENV,
             "",
         ).strip()
@@ -260,15 +261,19 @@ def _emit_backend_ready(port: int) -> None:
 def _run_backend_server(log_level: str) -> None:
     import uvicorn
 
-    from qwenpaw.config.utils import write_last_api
     from qwenpaw.constant import LOG_LEVEL_ENV, WORKING_DIR
     from qwenpaw.utils.logging import (
         SuppressPathAccessLogFilter,
         setup_logger,
     )
-    from qwenpaw.utils.port import get_stable_port, write_port_file
+    from qwenpaw.utils.port import (
+        get_stable_port,
+        persist_desktop_last_api,
+        resolve_desktop_bind_host,
+        write_port_file,
+    )
 
-    host = "127.0.0.1"
+    host = resolve_desktop_bind_host()
     normalized_log_level = log_level.lower()
     if normalized_log_level not in {
         "critical",
@@ -281,7 +286,7 @@ def _run_backend_server(log_level: str) -> None:
         normalized_log_level = "info"
 
     os.environ[LOG_LEVEL_ENV] = normalized_log_level
-    os.environ.pop("QWENPAW_RELOAD_MODE", None)
+    pop_env("RELOAD_MODE")
     setup_logger(normalized_log_level)
 
     # Ensure only one desktop backend runs: terminate any orphan left by a
@@ -320,7 +325,7 @@ def _run_backend_server(log_level: str) -> None:
     try:
         port = _socket_port(backend_socket)
         write_port_file(port_file, port)
-        write_last_api(host, port)
+        persist_desktop_last_api(host, port)
         _emit_backend_ready(port)
         uvicorn.Server(config).run(sockets=[backend_socket])
     except Exception:
@@ -366,7 +371,7 @@ def main() -> None:
 
     auto_disable_sandbox_on_windows()
 
-    _run_backend_server(os.environ.get(LOG_LEVEL_ENV, "info"))
+    _run_backend_server(get_env(LOG_LEVEL_ENV, "info"))
 
 
 if __name__ == "__main__":

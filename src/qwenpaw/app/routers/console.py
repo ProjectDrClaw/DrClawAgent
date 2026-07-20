@@ -28,6 +28,7 @@ from qwenpaw.schemas import (
     _coerce_content_item,
 )
 from ...utils.logging import LOG_FILE_PATH
+from ...utils.log_sanitize import sanitize_log_paths
 from ..agent_context import get_agent_for_request
 from ..approvals.display import approval_display_fields
 from ..chats.title_generator import generate_and_update_title
@@ -372,7 +373,9 @@ async def get_backend_debug_logs(
             "lines": lines,
             "updated_at": st.st_mtime,
             "size": st.st_size,
-            "content": _tail_text_file(log_path, lines=lines),
+            "content": sanitize_log_paths(
+                _tail_text_file(log_path, lines=lines),
+            ),
         }
     except FileNotFoundError:
         return {

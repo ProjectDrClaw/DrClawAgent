@@ -4,10 +4,10 @@ import {
   getProviderLetterColor,
   getProviderLetter,
 } from "./providerLetterIcon";
+import defaultImg from "@/assets/providers/default.jpg";
 
-/** The default fallback URL returned by providerIcon() for unknown providers. */
-const DEFAULT_FALLBACK_URL =
-  "https://gw.alicdn.com/imgextra/i4/O1CN01IWnlOw1lebfpiFrIL_!!6000000004844-0-tps-100-100.jpg";
+/** 未知 provider 时 providerIcon() 返回的默认图 */
+const DEFAULT_FALLBACK_URL = defaultImg;
 
 interface ProviderIconProps {
   providerId: string;
@@ -15,8 +15,7 @@ interface ProviderIconProps {
 }
 
 /**
- * Renders a provider icon: tries to load the CDN image first,
- * falls back to an uppercase first-letter avatar on error or for unknown providers.
+ * 渲染 provider 图标：优先本地图，失败或未知时回退为首字母头像。
  */
 export const ProviderIcon: React.FC<ProviderIconProps> = ({
   providerId,

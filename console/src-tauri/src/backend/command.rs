@@ -65,7 +65,7 @@ pub(super) fn create(app: &tauri::AppHandle) -> Result<Command, String> {
     if let Some(python) = packaged_python_runtime(app) {
         log::info!("[backend] bundled python runtime: {}", python.display());
         command = command.env(
-            "QWENPAW_DESKTOP_PY_RUNTIME",
+            "DRCLAW_DESKTOP_PY_RUNTIME",
             python.to_string_lossy().to_string(),
         );
     } else {
@@ -77,7 +77,7 @@ pub(super) fn create(app: &tauri::AppHandle) -> Result<Command, String> {
     if let Some(node_runtime) = packaged_node_runtime(app) {
         log::info!("[backend] bundled node runtime: {}", node_runtime.display());
         command = command.env(
-            "QWENPAW_DESKTOP_NODE_RUNTIME",
+            "DRCLAW_DESKTOP_NODE_RUNTIME",
             node_runtime.to_string_lossy().to_string(),
         );
     } else {

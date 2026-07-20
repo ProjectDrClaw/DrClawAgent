@@ -9,8 +9,9 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from ...constant import WORKING_DIR
+from ...env_resolve import drclaw_env, get_env
 
-DESKTOP_NODE_RUNTIME_ENV = "QWENPAW_DESKTOP_NODE_RUNTIME"
+DESKTOP_NODE_RUNTIME_ENV = drclaw_env("DESKTOP_NODE_RUNTIME")
 NPM_CACHE_ENV = "NPM_CONFIG_CACHE"
 
 
@@ -186,7 +187,7 @@ def _effective_node_path(
 
 
 def _bundled_node_path() -> Path | None:
-    root = os.environ.get(DESKTOP_NODE_RUNTIME_ENV, "").strip()
+    root = get_env(DESKTOP_NODE_RUNTIME_ENV, "").strip()
     if not root:
         return None
     return _normalize_node_path(_strip_windows_extended_prefix(root))

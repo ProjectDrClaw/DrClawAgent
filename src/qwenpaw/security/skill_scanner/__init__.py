@@ -174,8 +174,8 @@ def is_skill_whitelisted(
 # ---------------------------------------------------------------------------
 
 _BLOCKED_HISTORY_FILE = "skill_scanner_blocked.json"
-_WORKING_DIR_CURRENT_NAME = ".qwenpaw"
-_WORKING_DIR_LEGACY_NAME = ".copaw"
+_WORKING_DIR_CURRENT_NAME = ".drclaw"
+_WORKING_DIR_LEGACY_NAMES = (".copaw", ".qwenpaw")
 _history_lock = threading.Lock()
 
 
@@ -185,13 +185,13 @@ def _get_blocked_history_path() -> Path:
 
         return WORKING_DIR / _BLOCKED_HISTORY_FILE
     except Exception:
-        legacy_dir = Path.home() / _WORKING_DIR_LEGACY_NAME
-        base_dir = (
-            legacy_dir
-            if legacy_dir.exists()
-            else Path.home() / _WORKING_DIR_CURRENT_NAME
+        for legacy_name in _WORKING_DIR_LEGACY_NAMES:
+            legacy_dir = Path.home() / legacy_name
+            if legacy_dir.exists():
+                return legacy_dir / _BLOCKED_HISTORY_FILE
+        return (
+            Path.home() / _WORKING_DIR_CURRENT_NAME / _BLOCKED_HISTORY_FILE
         )
-        return base_dir / _BLOCKED_HISTORY_FILE
 
 
 @dataclass

@@ -213,7 +213,7 @@ export function ACPDrawer({
           <Input.TextArea autoSize={{ minRows: 4, maxRows: 8 }} />
         </Form.Item>
 
-        <div className={styles.formTopActions}>
+        <div className={styles.formTopActions} style={{ display: "none" }}>
           <Button
             type="text"
             size="small"
@@ -221,7 +221,7 @@ export function ACPDrawer({
             onClick={() => openExternalLink(getACPDocsUrl(i18n.language))}
             title={t("acp.docsHelp")}
             className={styles.dingtalkDocBtn}
-            style={{ color: "#FF7F16" }}
+            style={{ color: "#2657C9" }}
           >
             {t("acp.docs")}
           </Button>

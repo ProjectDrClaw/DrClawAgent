@@ -39,7 +39,7 @@ Anyone who can reach this address may access QwenPaw APIs without login.
 
 Recommended:
   - Restrict access to a trusted network interface or protected environment.
-  - Enable authentication with QWENPAW_AUTH_ENABLED=true if untrusted users or
+  - Enable authentication with DRCLAW_AUTH_ENABLED=true if untrusted users or
     processes may reach this address.
 ============================================================
 """.strip()

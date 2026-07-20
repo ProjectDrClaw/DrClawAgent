@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from ..constant import PROJECT_NAME, WORKING_DIR
+from .log_sanitize import short_log_source_path
 
 # Rotating file handler limits (idempotent add avoids duplicate handlers)
 _LOG_MAX_BYTES = 5 * 1024 * 1024  # 5 MiB
@@ -78,6 +79,7 @@ class ColorFormatter(logging.Formatter):
         except ValueError:
             # Different drives on Windows (e.g., C: vs D:) are not comparable.
             pass
+        full_path = short_log_source_path(full_path)
 
         prefix = f"{level} {full_path}:{record.lineno}"
         original_msg = super().format(record)
@@ -114,6 +116,7 @@ class PlainFormatter(logging.Formatter):
                 full_path = os.path.relpath(full_path, cwd)
         except ValueError:
             pass
+        full_path = short_log_source_path(full_path)
 
         prefix = f"{record.levelname} | {full_path}:{record.lineno}"
         formatted_time = self.formatTime(record, self.datefmt)

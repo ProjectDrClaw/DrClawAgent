@@ -1,10 +1,8 @@
 # Deploy website to GitHub Pages (see scripts/website_build.sh).
-# Custom domain: qwenpaw.agentscope.io (CNAME).
+# Dr.Claw: 默认不自动发布 upstream 官网，仅手动触发。
 name: Deploy website to GitHub Pages
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -17,10 +15,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Deploy on: stable releases OR manual workflow_dispatch
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event.release.prerelease == false
     steps:
       - name: Checkout
         uses: actions/checkout@v4

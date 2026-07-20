@@ -132,7 +132,7 @@ pub(crate) fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Erro
             .targets([
                 Target::new(TargetKind::Stdout),
                 Target::new(TargetKind::LogDir {
-                    file_name: Some("qwenpaw-desktop".into()),
+                    file_name: Some("drclaw-desktop".into()),
                 }),
             ])
             .level(desktop_log_level())
@@ -148,13 +148,22 @@ pub(crate) fn stop(app: &tauri::AppHandle) {
     app.state::<BackendState>().stop();
 }
 
+fn desktop_debug_enabled() -> bool {
+    for key in ["DRCLAW_DESKTOP_DEBUG", "QWENPAW_DESKTOP_DEBUG", "COPAW_DESKTOP_DEBUG"] {
+        if std::env::var(key).is_ok_and(|value| {
+            matches!(
+                value.to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes" | "on"
+            )
+        }) {
+            return true;
+        }
+    }
+    false
+}
+
 fn desktop_log_level() -> log::LevelFilter {
-    if std::env::var("QWENPAW_DESKTOP_DEBUG").is_ok_and(|value| {
-        matches!(
-            value.to_ascii_lowercase().as_str(),
-            "1" | "true" | "yes" | "on"
-        )
-    }) {
+    if desktop_debug_enabled() {
         log::LevelFilter::Debug
     } else {
         log::LevelFilter::Info
@@ -178,7 +187,7 @@ fn start(app: &tauri::AppHandle) {
     .env("PYTHONIOENCODING", "utf-8")
     .env("PYTHONUNBUFFERED", "1")
     .env("PYTHONFAULTHANDLER", "1")
-    .env("QWENPAW_DESKTOP_APP", "1");
+    .env("DRCLAW_DESKTOP_APP", "1");
 
     log::info!("[backend] starting generation={generation}");
 

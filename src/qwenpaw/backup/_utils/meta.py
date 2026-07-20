@@ -24,14 +24,14 @@ def get_qwenpaw_version() -> str:
 def generate_backup_id() -> str:
     """Return a human-readable, filesystem-safe backup ID.
 
-    Format: ``qwenpaw-{version}-{YYYYMMDDTHHmmssZ}-{short8}``
+    Format: ``drclaw-{version}-{YYYYMMDDTHHmmssZ}-{short8}``
 
-    Example: ``qwenpaw-1.2.3-20260420T093000Z-ab12cd34``
+    Example: ``drclaw-1.2.3-20260420T093000Z-ab12cd34``
     """
     ver = re.sub(r"[^a-zA-Z0-9._-]", "_", get_qwenpaw_version())
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     short = uuid4().hex[:8]
-    return f"qwenpaw-{ver}-{ts}-{short}"
+    return f"drclaw-{ver}-{ts}-{short}"
 
 
 def get_system_info() -> dict:

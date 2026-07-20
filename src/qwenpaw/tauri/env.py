@@ -7,9 +7,13 @@ has read import-time environment variables.
 
 import os
 
-DESKTOP_APP_ENV = "QWENPAW_DESKTOP_APP"
-DESKTOP_CORS_ORIGINS_ENV = "QWENPAW_CORS_ORIGINS"
-DESKTOP_READY_PREFIX = "QWENPAW_BACKEND_READY"
+from qwenpaw.env_resolve import drclaw_env, get_env
+
+DESKTOP_APP_ENV = drclaw_env("DESKTOP_APP")
+DESKTOP_API_HOST_ENV = drclaw_env("DESKTOP_API_HOST")
+DESKTOP_CORS_ORIGINS_ENV = drclaw_env("CORS_ORIGINS")
+# 不含尾部空格；由 entry 打印时再拼空格
+DESKTOP_READY_PREFIX = drclaw_env("BACKEND_READY")
 
 DESKTOP_CORS_ORIGINS = (
     "tauri://localhost",
@@ -21,7 +25,7 @@ DESKTOP_CORS_ORIGINS = (
 def ensure_desktop_cors_origins() -> None:
     origins = [
         origin.strip()
-        for origin in os.environ.get(DESKTOP_CORS_ORIGINS_ENV, "").split(",")
+        for origin in get_env(DESKTOP_CORS_ORIGINS_ENV, "").split(",")
         if origin.strip()
     ]
     for origin in DESKTOP_CORS_ORIGINS:

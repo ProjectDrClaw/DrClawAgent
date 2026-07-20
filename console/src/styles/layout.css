@@ -1,14 +1,14 @@
-html,
+﻿html,
 body {
   height: 100%;
   overflow: hidden;
   margin: 0;
   padding: 0;
-  background: #f9f8f4;
+  background: #F7F8FA;
 }
 
 .qwenpaw-layout {
-  background: #f9f8f4;
+  background: #F7F8FA;
 }
 
 /* ─── Dark mode global token overrides ─────────────────────────────────────── */
@@ -897,12 +897,12 @@ html.dark-mode
   min-height: 100vh;
   max-height: 100vh;
   overflow: hidden;
-  background: #f9f8f4;
+  background: #F7F8FA;
 }
 
 .ant-layout-content {
   overflow: hidden;
-  background: #f9f8f4;
+  background: #F7F8FA;
 }
 
 .qwenpaw-bubble-list-wrapper {
@@ -944,7 +944,7 @@ html.dark-mode .qwenpaw-sender-content {
 /* Menu background in light mode */
 .qwenpaw-menu,
 .ant-menu {
-  background: #f9f8f4 !important;
+  background: #F7F8FA !important;
 }
 
 /* Menu selected item in light mode */

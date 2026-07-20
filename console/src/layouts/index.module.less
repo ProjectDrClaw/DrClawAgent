@@ -6,11 +6,33 @@
 // ─── Header ───────────────────────────────────────────────────────────────────
 .header {
   height: 56px;
+  line-height: 1;
   padding: 0 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f9f8f4;
+  background: #2657c9;
+  color: #fff;
+
+  /* 蓝底 Header 上的文字按钮与图标 */
+  :global(.qwenpaw-btn-text),
+  :global(.ant-btn-text) {
+    color: #fff !important;
+
+    &:hover {
+      color: #fff !important;
+      background: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    .anticon,
+    svg {
+      color: inherit !important;
+    }
+  }
+
+  :global(.anticon) {
+    color: #fff;
+  }
 
   :global {
     .qwenpaw-space-item {
@@ -23,6 +45,48 @@
   .showOnMobile {
     display: none;
   }
+}
+
+// Header 内 CodingModeToggle 按钮样式
+.headerCodingControl {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+
+  :global(.qwenpaw-tooltip-disabled-compatible-wrapper) {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  button {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: rgba(255, 255, 255, 0.85);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-weight: 500;
+
+    &:hover:not(:disabled) {
+      color: #fff !important;
+      background: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    &[class*="active"] {
+      color: #fff !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      font-weight: 600;
+    }
+  }
+}
+
+.headerTitle {
+  font-size: 18px;
+  font-weight: 500;
+  min-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {
@@ -43,18 +107,9 @@
   }
 }
 
-.headerTitle {
-  font-size: 18px;
-  font-weight: 500;
-  min-width: 90px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 .sider {
-  background: #f9f8f4 !important;
+  background: #f7f8fa !important;
   overflow: auto;
   height: calc(100vh - 64px) !important;
   padding: 0 16px;
@@ -371,21 +426,49 @@
   width: 16px;
   height: 0px;
   transform: rotate(90deg);
-  border-top: 1px solid rgba(234, 232, 231, 1);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
   margin: 0 8px;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+
+  :global(.qwenpaw-space-item) {
+    display: flex;
+    align-items: center;
+  }
+
+  :global(.qwenpaw-btn),
+  :global(.ant-btn) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+  }
+}
+
+.headerUser {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+}
+
 .headerDivider {
-  width: 16px;
-  height: 0px;
-  transform: rotate(90deg);
-  z-index: 4;
-  border-top: 1px solid rgba(234, 232, 231, 1);
+  width: 1px;
+  height: 16px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .versionBadge {
   font-size: 12px;
-  color: #1a171673;
+  color: rgba(255, 255, 255, 0.75);
   font-weight: 600;
   line-height: 1;
   position: relative;
@@ -446,7 +529,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
-  background: #f9f8f4; // match sider background so scrolled content is hidden
+  background: #f7f8fa; // match sider background so scrolled content is hidden
 }
 
 .collapseToggle {
@@ -871,11 +954,11 @@
 /* ─── Dark mode overrides ─────────────────────────────────────────────────── */
 :global(.dark-mode) {
   .header {
-    background: #1a1a1a !important;
+    background: #2657c9 !important;
     border-bottom-color: rgba(255, 255, 255, 0.08) !important;
     color: rgba(255, 255, 255, 0.85);
 
-    /* Text buttons (Docs / FAQ / GitHub / Changelog) */
+    /* Text buttons */
     :global(.qwenpaw-btn-text),
     :global(.ant-btn-text) {
       color: rgba(255, 255, 255, 0.75) !important;
@@ -911,11 +994,11 @@
   }
 
   .versionBadge {
-    color: #ff7f16;
+    color: rgba(255, 255, 255, 0.75);
   }
 
   .collapseBtn {
-    color: #ff7f16;
+    color: #2657c9;
   }
 
   .authActions {

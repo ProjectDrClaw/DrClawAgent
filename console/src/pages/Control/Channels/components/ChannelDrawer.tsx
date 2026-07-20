@@ -36,6 +36,7 @@ const CHANNELS_WITH_ACCESS_CONTROL: ChannelKey[] = [
   "xiaoyi",
   "yuanbao",
   "slack",
+  "openim",
 ];
 
 // Doc EN URLs per channel (anchors on https://qwenpaw.agentscope.io/docs/channels)
@@ -62,6 +63,7 @@ const CHANNEL_DOC_EN_URLS: Partial<Record<ChannelKey, string>> = {
   onebot:
     "https://qwenpaw.agentscope.io/docs/channels/?lang=en#OneBot-v11-NapCat--QQ-full-protocol",
   slack: "https://qwenpaw.agentscope.io/docs/channels/?lang=en#Slack",
+  openim: "https://docs.openim.io/",
 };
 
 // Doc ZH URLs per channel (anchors on https://qwenpaw.agentscope.io/docs/channels)
@@ -86,6 +88,7 @@ const CHANNEL_DOC_ZH_URLS: Partial<Record<ChannelKey, string>> = {
   onebot:
     "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#OneBot-v11NapCat--QQ-完整协议",
   slack: "https://qwenpaw.agentscope.io/docs/channels/?lang=zh#Slack",
+  openim: "https://docs.openim.io/zh-Hans/",
 };
 
 const TWILIO_CONSOLE_URL = "https://console.twilio.com";
@@ -1357,6 +1360,41 @@ export function ChannelDrawer({
           </>
         );
 
+      case "openim":
+        return (
+          <>
+            <ConfigProvider prefixCls="ant">
+              <Alert
+                type="info"
+                showIcon
+                message={t("channels.openimGuide")}
+                style={{ marginBottom: 16 }}
+              />
+            </ConfigProvider>
+            <Form.Item
+              name="api_url"
+              label="API URL"
+              rules={[{ required: true }]}
+            >
+              <Input placeholder="http://127.0.0.1:10002" />
+            </Form.Item>
+            <Form.Item
+              name="app_id"
+              label="App ID"
+              rules={[{ required: true }]}
+            >
+              <Input placeholder="App ID" />
+            </Form.Item>
+            <Form.Item
+              name="app_secret"
+              label="App Secret"
+              rules={[{ required: true }]}
+            >
+              <Input.Password placeholder="App Secret" />
+            </Form.Item>
+          </>
+        );
+
       default:
         return null;
     }
@@ -1527,7 +1565,7 @@ export function ChannelDrawer({
               openExternalLink(finalUrl);
             }}
             className={styles.dingtalkDocBtn}
-            style={{ color: "#FF7F16" }}
+            style={{ color: "#2657C9", display: "none" }}
           >
             {label} Doc
           </Button>
@@ -1548,7 +1586,7 @@ export function ChannelDrawer({
             icon={<LinkOutlined />}
             onClick={() => openExternalLink(url)}
             className={styles.dingtalkDocBtn}
-            style={{ color: "#FF7F16" }}
+            style={{ color: "#2657C9", display: "none" }}
           >
             {label} Doc
           </Button>
@@ -1561,7 +1599,7 @@ export function ChannelDrawer({
           icon={<LinkOutlined />}
           onClick={() => openExternalLink(TWILIO_CONSOLE_URL)}
           className={styles.dingtalkDocBtn}
-          style={{ color: "#FF7F16" }}
+          style={{ color: "#2657C9", display: "none" }}
         >
           {t("channels.voiceSetupLink")}
         </Button>

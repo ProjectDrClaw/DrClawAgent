@@ -50,6 +50,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import BinaryIO
 
+from qwenpaw.env_resolve import drclaw_env, get_env
+
 from ._mount_swap import (
     SwapPreparation,
     prepare_destination_for_swap,
@@ -61,10 +63,11 @@ logger = logging.getLogger(__name__)
 
 _RESTORE_TMP_SUFFIX = ".restore_tmp"
 _RESTORE_OLD_SUFFIX = ".restore_old"
-_RESTORE_LOCK_FILE = ".qwenpaw_restore.lock"
+_RESTORE_LOCK_FILE = ".drclaw_restore.lock"
+_LEGACY_RESTORE_LOCK_FILE = ".qwenpaw_restore.lock"
 _LOCK_REGION_SIZE = 1
 _LOCK_RETRY_INTERVAL_SECONDS = 0.1
-_LOCK_TIMEOUT_SECONDS_ENV = "QWENPAW_RESTORE_LOCK_TIMEOUT_SECONDS"
+_LOCK_TIMEOUT_SECONDS_ENV = drclaw_env("RESTORE_LOCK_TIMEOUT_SECONDS")
 _LOCK_TIMEOUT_SECONDS = 300.0
 
 # Per-destination threading locks.  The dict itself is guarded by _LOCKS_GUARD.
@@ -84,7 +87,7 @@ def restore_process_lock() -> Iterator[None]:
     """Serialise restore and restore-cleanup work across processes."""
     from ...constant import WORKING_DIR
 
-    lock_path = WORKING_DIR / _RESTORE_LOCK_FILE
+    lock_path = _restore_lock_path(WORKING_DIR)
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with open(lock_path, "a+b") as handle:
         _acquire_file_lock(handle, lock_path)
@@ -92,6 +95,22 @@ def restore_process_lock() -> Iterator[None]:
             yield
         finally:
             _release_file_lock(handle)
+
+
+def _restore_lock_path(working_dir: Path) -> Path:
+    """Return restore lock path; migrate legacy lock file if present."""
+    lock_path = working_dir / _RESTORE_LOCK_FILE
+    legacy_path = working_dir / _LEGACY_RESTORE_LOCK_FILE
+    if legacy_path.exists() and not lock_path.exists():
+        try:
+            legacy_path.rename(lock_path)
+        except OSError:
+            logger.debug(
+                "Could not migrate legacy restore lock %s to %s",
+                legacy_path,
+                lock_path,
+            )
+    return lock_path
 
 
 def _acquire_file_lock(handle: BinaryIO, lock_path: Path) -> None:
@@ -140,7 +159,7 @@ def _raise_restore_lock_timeout(lock_path: Path) -> None:
 
 
 def _restore_lock_timeout_seconds() -> float:
-    raw = os.environ.get(_LOCK_TIMEOUT_SECONDS_ENV)
+    raw = get_env(_LOCK_TIMEOUT_SECONDS_ENV, "")
     if not raw:
         return _LOCK_TIMEOUT_SECONDS
     try:

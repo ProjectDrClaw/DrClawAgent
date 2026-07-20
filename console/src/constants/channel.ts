@@ -15,6 +15,7 @@ export const CHANNELS = {
   wecom: "wecom",
   xiaoyi: "xiaoyi",
   yuanbao: "yuanbao",
+  openim: "openim",
 };
 
 export const CHANNEL_COLORS: Record<string, string> = {
@@ -34,4 +35,5 @@ export const CHANNEL_COLORS: Record<string, string> = {
   wecom: "olive",
   xiaoyi: "cyan",
   yuanbao: "lime",
+  openim: "blue",
 };

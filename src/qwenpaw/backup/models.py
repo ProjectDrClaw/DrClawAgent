@@ -35,7 +35,7 @@ class BackupScope(BaseModel):
 class BackupMeta(BaseModel):
     id: str = Field(
         default_factory=generate_backup_id,
-        description="Backup ID (qwenpaw-{version}-{timestamp}-{short8})",
+        description="Backup ID (drclaw-{version}-{timestamp}-{short8})",
     )
     name: str = Field(..., description="Backup name")
     description: str = Field(default="", description="Optional description")

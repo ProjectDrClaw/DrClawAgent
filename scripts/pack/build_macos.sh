@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-click build: console -> conda-pack -> QwenPaw.app. Run from repo root.
+# One-click build: console -> conda-pack -> DrClaw.app. Run from repo root.
 # Requires: conda, node/npm (for console). Optional: icon.icns in assets/.
 
 set -e
@@ -8,7 +8,7 @@ cd "$REPO_ROOT"
 PACK_DIR="$(cd "$(dirname "$0")" && pwd)"
 DIST="${DIST:-dist}"
 ARCHIVE="${DIST}/qwenpaw-env.tar.gz"
-APP_NAME="QwenPaw"
+APP_NAME="DrClaw"
 APP_DIR="${DIST}/${APP_NAME}.app"
 
 echo "== Building wheel (includes console frontend) =="
@@ -56,15 +56,23 @@ if [[ -x "${APP_DIR}/Contents/Resources/env/bin/conda-unpack" ]]; then
   (cd "${APP_DIR}/Contents/Resources/env" && ./bin/conda-unpack)
 fi
 
-# Launcher: force packed env; when no TTY log to ~/.qwenpaw/desktop.log (no exec so we see errors)
+# Launcher: force packed env; when no TTY log to ~/.drclaw/desktop.log (no exec so we see errors)
+DRCLAW_BIN="${APP_DIR}/Contents/Resources/env/bin/drclaw"
+cat > "$DRCLAW_BIN" << 'DRCLAW_WRAPPER'
+#!/usr/bin/env bash
+ENV_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+exec "$ENV_DIR/bin/python" -u -m qwenpaw "$@"
+DRCLAW_WRAPPER
+chmod +x "$DRCLAW_BIN"
+
 cat > "${APP_DIR}/Contents/MacOS/${APP_NAME}" << 'LAUNCHER'
 #!/usr/bin/env bash
 ENV_DIR="$(cd "$(dirname "$0")/../Resources/env" && pwd)"
-LOG="$HOME/.qwenpaw/desktop.log"
+LOG="$HOME/.drclaw/desktop.log"
 unset PYTHONPATH
 export PYTHONHOME="$ENV_DIR"
 export PYTHONNOUSERSITE=1
-export QWENPAW_DESKTOP_APP=1
+export DRCLAW_DESKTOP_APP="${DRCLAW_DESKTOP_APP:-${QWENPAW_DESKTOP_APP:-1}}"
 
 # Preserve system PATH for accessing system commands (e.g. imsg, brew)
 # Prepend packaged env/bin so packaged Python takes precedence
@@ -84,12 +92,12 @@ fi
 
 cd "$HOME" || true
 
-# Log level: env var QWENPAW_LOG_LEVEL or default to "info"
-LOG_LEVEL="${QWENPAW_LOG_LEVEL:-info}"
+# Log level: DRCLAW_LOG_LEVEL (fallback QWENPAW_LOG_LEVEL) or default "info"
+LOG_LEVEL="${DRCLAW_LOG_LEVEL:-${QWENPAW_LOG_LEVEL:-info}}"
 
 if [ ! -t 2 ]; then
-  mkdir -p "$HOME/.qwenpaw"
-  { echo "=== $(date) QwenPaw starting ==="
+  mkdir -p "$HOME/.drclaw"
+  { echo "=== $(date) DrClaw starting ==="
     echo "ENV_DIR=$ENV_DIR"
     echo "Python: $ENV_DIR/bin/python (exists=$([ -x "$ENV_DIR/bin/python" ] && echo yes || echo no))"
     echo "PATH=$PATH"
@@ -109,11 +117,13 @@ if [ ! -t 2 ]; then
     echo "ERROR: python not executable at $ENV_DIR/bin/python"
     exit 1
   fi
-  if [ ! -f "$HOME/.qwenpaw/config.json" ]; then
-    "$ENV_DIR/bin/python" -u -m qwenpaw init --defaults --accept-security
+  if [ ! -f "$HOME/.drclaw/config.json" ] \
+    && [ ! -f "$HOME/.qwenpaw/config.json" ] \
+    && [ ! -f "$HOME/.copaw/config.json" ]; then
+    "$ENV_DIR/bin/drclaw" init --defaults --accept-security
   fi
-  echo "Launching python with log-level=$LOG_LEVEL..."
-  "$ENV_DIR/bin/python" -u -m qwenpaw desktop --log-level "$LOG_LEVEL"
+  echo "Launching drclaw desktop with log-level=$LOG_LEVEL..."
+  "$ENV_DIR/bin/drclaw" desktop --log-level "$LOG_LEVEL"
   EXIT=$?
   if [ $EXIT -ge 128 ]; then
     SIG=$((EXIT - 128))
@@ -124,10 +134,12 @@ if [ ! -t 2 ]; then
   echo "--- Full log: $LOG (scroll up for Python traceback if app exited early) ---"
   exit $EXIT
 fi
-if [ ! -f "$HOME/.qwenpaw/config.json" ]; then
-  "$ENV_DIR/bin/python" -u -m qwenpaw init --defaults --accept-security
+if [ ! -f "$HOME/.drclaw/config.json" ] \
+  && [ ! -f "$HOME/.qwenpaw/config.json" ] \
+  && [ ! -f "$HOME/.copaw/config.json" ]; then
+  "$ENV_DIR/bin/drclaw" init --defaults --accept-security
 fi
-exec "$ENV_DIR/bin/python" -u -m qwenpaw desktop --log-level "$LOG_LEVEL"
+exec "$ENV_DIR/bin/drclaw" desktop --log-level "$LOG_LEVEL"
 LAUNCHER
 chmod +x "${APP_DIR}/Contents/MacOS/${APP_NAME}"
 
@@ -164,13 +176,13 @@ cat > "${APP_DIR}/Contents/Info.plist" << INFOPLIST
 <plist version="1.0">
 <dict>
   <key>CFBundleExecutable</key><string>${APP_NAME}</string>
-  <key>CFBundleIdentifier</key><string>com.qwenpaw.desktop</string>
+  <key>CFBundleIdentifier</key><string>io.drclaw.desktop</string>
   <key>CFBundleName</key><string>${APP_NAME}</string>
   <key>CFBundleVersion</key><string>${VERSION}</string>
   <key>CFBundleShortVersionString</key><string>${VERSION}</string>
   ${ICON_PLIST}<key>NSHighResolutionCapable</key><true/>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
-  <key>NSDesktopFolderUsageDescription</key><string>QwenPaw may access files in your Desktop folder if you use file-related features. You can choose Don'\''t Allow; the app will still run with limited file access.</string>
+  <key>NSDesktopFolderUsageDescription</key><string>DrClaw may access files in your Desktop folder if you use file-related features. You can choose Don'\''t Allow; the app will still run with limited file access.</string>
 </dict>
 </plist>
 INFOPLIST
@@ -178,7 +190,7 @@ INFOPLIST
 echo "== Built ${APP_DIR} =="
 # Optional: create zip for distribution (set CREATE_ZIP=1)
 if [[ -n "${CREATE_ZIP}" ]]; then
-  ZIP_NAME="${DIST}/QwenPaw-${VERSION}-macOS.zip"
+  ZIP_NAME="${DIST}/DrClaw-${VERSION}-macOS.zip"
   ditto -c -k --sequesterRsrc --keepParent "${APP_DIR}" "${ZIP_NAME}"
   echo "== Created ${ZIP_NAME} =="
 fi

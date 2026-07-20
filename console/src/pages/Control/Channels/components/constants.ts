@@ -23,6 +23,7 @@ export const CHANNEL_LABELS: Record<string, string> = {
   wechat: "WeChat",
   onebot: "OneBot",
   yuanbao: "Yuanbao",
+  openim: "OpenIM",
 };
 
 function formatCustomChannelKey(key: string): string {

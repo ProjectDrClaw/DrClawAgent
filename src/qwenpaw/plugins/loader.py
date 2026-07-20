@@ -19,6 +19,7 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _dist_version
 from packaging.requirements import Requirement
 
+from ..env_resolve import drclaw_env, get_env, set_env
 from .architecture import PluginManifest, PluginRecord
 from .api import PluginApi
 from .registry import PluginRegistry
@@ -44,7 +45,7 @@ def _is_frozen() -> bool:
 def _desktop_python() -> Optional[str]:
     """Bundled standalone CPython used to install plugin deps in the frozen
     desktop build. Its absolute path is injected by the Tauri shell."""
-    path = os.environ.get("QWENPAW_DESKTOP_PY_RUNTIME", "").strip()
+    path = get_env(drclaw_env("DESKTOP_PY_RUNTIME"), "").strip()
     return path if path and Path(path).is_file() else None
 
 
@@ -105,7 +106,7 @@ def _ensure_plugin_site_on_path() -> None:
         return
     # Expose the dir so plugins that spawn the bundled Python (e.g. the pet
     # desktop window) can put their installed deps on the child's PYTHONPATH.
-    os.environ["QWENPAW_PLUGIN_SITE"] = site_dir
+    set_env("PLUGIN_SITE", site_dir)
     if site_dir in sys.path:
         return
     import site as _site
@@ -852,7 +853,7 @@ class PluginLoader:
             raise RuntimeError(
                 f"Cannot install dependencies for plugin '{plugin_id}': the "
                 "bundled Python runtime is unavailable "
-                "(QWENPAW_DESKTOP_PY_RUNTIME not set). Reinstall QwenPaw "
+                "(DRCLAW_DESKTOP_PY_RUNTIME not set). Reinstall Dr.Claw "
                 "Desktop, or install the plugin's dependencies manually.",
             )
         target = str(_plugin_site_dir())

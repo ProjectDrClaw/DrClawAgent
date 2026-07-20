@@ -325,9 +325,9 @@ fn resolve_workspace_file_path(
 /// Get the coding project directory from QwenPaw configuration.
 ///
 /// Resolution order:
-/// 1. `QWENPAW_WORKING_DIR` / `COPAW_WORKING_DIR` environment variable
-/// 2. `~/.copaw` (legacy installation)
-/// 3. `~/.qwenpaw` (default)
+/// 1. `DRCLAW_WORKING_DIR` / `QWENPAW_WORKING_DIR` / `COPAW_WORKING_DIR`
+/// 2. `~/.drclaw` (default for new installs)
+/// 3. `~/.qwenpaw` / `~/.copaw` (legacy installations)
 ///
 /// Then reads the agent profile reference from root `config.json` to locate the
 /// agent's workspace directory, and loads the full agent configuration from
@@ -337,17 +337,29 @@ fn resolve_workspace_file_path(
 ///
 /// If `agent_id` is None, uses the active agent from config.json.
 fn get_coding_directory(agent_id: Option<&str>) -> Result<PathBuf, String> {
-    let working_dir = if let Ok(dir) = std::env::var("QWENPAW_WORKING_DIR") {
+    let working_dir = if let Ok(dir) = std::env::var("DRCLAW_WORKING_DIR") {
+        PathBuf::from(dir)
+    } else if let Ok(dir) = std::env::var("QWENPAW_WORKING_DIR") {
         PathBuf::from(dir)
     } else if let Ok(dir) = std::env::var("COPAW_WORKING_DIR") {
         PathBuf::from(dir)
     } else {
         let home = dirs::home_dir().ok_or("failed to get home directory")?;
-        let copaw_legacy = home.join(".copaw");
-        if copaw_legacy.exists() {
-            copaw_legacy
+        let drclaw = home.join(".drclaw");
+        if drclaw.exists() {
+            drclaw
         } else {
-            home.join(".qwenpaw")
+            let qwenpaw = home.join(".qwenpaw");
+            if qwenpaw.exists() {
+                qwenpaw
+            } else {
+                let copaw_legacy = home.join(".copaw");
+                if copaw_legacy.exists() {
+                    copaw_legacy
+                } else {
+                    drclaw
+                }
+            }
         }
     };
 

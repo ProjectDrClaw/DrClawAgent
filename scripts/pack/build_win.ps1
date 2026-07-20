@@ -215,8 +215,19 @@ if (Test-Path $pythonExe) {
   Write-Host "[build_win] WARN: python.exe not found at $pythonExe, skipping bytecode compilation" -ForegroundColor Yellow
 }
 
+# drclaw.cmd / qwenpaw.cmd must exist before launcher .bat files reference them.
+$DrclawCmd = Join-Path $EnvRoot "drclaw.cmd"
+@"
+@"%~dp0python.exe" -u -m qwenpaw %*
+"@ | Set-Content -Path $DrclawCmd -Encoding ASCII
+
+$QwenpawCmd = Join-Path $EnvRoot "qwenpaw.cmd"
+@"
+@"%~dp0python.exe" -u -m qwenpaw %*
+"@ | Set-Content -Path $QwenpawCmd -Encoding ASCII
+
 # Main launcher .bat (will be hidden by VBS)
-$LauncherBat = Join-Path $EnvRoot "QwenPaw Desktop.bat"
+$LauncherBat = Join-Path $EnvRoot "DrClaw Desktop.bat"
 @"
 @echo off
 cd /d "%~dp0"
@@ -228,8 +239,10 @@ REM Preserve system PATH for accessing system commands
 REM Prepend packaged env to PATH so packaged Python takes precedence
 set "PATH=%~dp0;%~dp0Scripts;%PATH%"
 
-REM Log level: env var QWENPAW_LOG_LEVEL or default to "info"
-if not defined QWENPAW_LOG_LEVEL set "QWENPAW_LOG_LEVEL=info"
+REM Log level: DRCLAW_LOG_LEVEL (fallback QWENPAW_LOG_LEVEL) or default "info"
+if not defined DRCLAW_LOG_LEVEL (
+  if defined QWENPAW_LOG_LEVEL (set "DRCLAW_LOG_LEVEL=%QWENPAW_LOG_LEVEL%") else (set "DRCLAW_LOG_LEVEL=info")
+)
 
 REM Set SSL certificate paths for packaged environment
 REM Use temp file to avoid for /f blocking issue in bat scripts
@@ -245,14 +258,18 @@ if defined CERT_FILE (
   )
 )
 
-if not exist "%USERPROFILE%\.qwenpaw\config.json" (
-  "%~dp0python.exe" -u -m qwenpaw init --defaults --accept-security
+if not exist "%USERPROFILE%\.drclaw\config.json" (
+  if not exist "%USERPROFILE%\.qwenpaw\config.json" (
+    if not exist "%USERPROFILE%\.copaw\config.json" (
+      "%~dp0drclaw.cmd" init --defaults --accept-security
+    )
+  )
 )
-"%~dp0python.exe" -u -m qwenpaw desktop --log-level %QWENPAW_LOG_LEVEL%
+"%~dp0drclaw.cmd" desktop --log-level %DRCLAW_LOG_LEVEL%
 "@ | Set-Content -Path $LauncherBat -Encoding ASCII
 
 # Debug launcher .bat (shows console)
-$DebugBat = Join-Path $EnvRoot "QwenPaw Desktop (Debug).bat"
+$DebugBat = Join-Path $EnvRoot "DrClaw Desktop (Debug).bat"
 @"
 @echo off
 cd /d "%~dp0"
@@ -264,8 +281,10 @@ REM Preserve system PATH for accessing system commands
 REM Prepend packaged env to PATH so packaged Python takes precedence
 set "PATH=%~dp0;%~dp0Scripts;%PATH%"
 
-REM Debug mode: use debug log level by default (can override with QWENPAW_LOG_LEVEL)
-if not defined QWENPAW_LOG_LEVEL set "QWENPAW_LOG_LEVEL=debug"
+REM Debug mode: use debug log level by default (can override with DRCLAW_LOG_LEVEL)
+if not defined DRCLAW_LOG_LEVEL (
+  if defined QWENPAW_LOG_LEVEL (set "DRCLAW_LOG_LEVEL=%QWENPAW_LOG_LEVEL%") else (set "DRCLAW_LOG_LEVEL=debug")
+)
 
 REM Set SSL certificate paths for packaged environment
 REM Use temp file to avoid for /f blocking issue in bat scripts
@@ -282,46 +301,42 @@ if defined CERT_FILE (
 )
 
 echo ====================================
-echo QwenPaw Desktop - Debug Mode
+echo DrClaw Desktop - Debug Mode
 echo ====================================
 echo Working Directory: %cd%
 echo Python: "%~dp0python.exe"
 echo PATH: %PATH%
 echo PYTHONNOUSERSITE: %PYTHONNOUSERSITE%
-echo Log Level: %QWENPAW_LOG_LEVEL%
+echo Log Level: %DRCLAW_LOG_LEVEL%
 echo SSL_CERT_FILE: %SSL_CERT_FILE%
 echo REQUESTS_CA_BUNDLE: %REQUESTS_CA_BUNDLE%
 echo CURL_CA_BUNDLE: %CURL_CA_BUNDLE%
 echo.
-if not exist "%USERPROFILE%\.qwenpaw\config.json" (
-  echo [Init] Creating config...
-  "%~dp0python.exe" -u -m qwenpaw init --defaults --accept-security
+if not exist "%USERPROFILE%\.drclaw\config.json" (
+  if not exist "%USERPROFILE%\.qwenpaw\config.json" (
+    if not exist "%USERPROFILE%\.copaw\config.json" (
+      echo [Init] Creating config...
+      "%~dp0drclaw.cmd" init --defaults --accept-security
+    )
+  )
 )
-echo [Launch] Starting QwenPaw Desktop with log-level=%QWENPAW_LOG_LEVEL%...
+echo [Launch] Starting DrClaw Desktop with log-level=%DRCLAW_LOG_LEVEL%...
 echo Press Ctrl+C to stop
 echo.
-"%~dp0python.exe" -u -m qwenpaw desktop --log-level %QWENPAW_LOG_LEVEL%
+"%~dp0drclaw.cmd" desktop --log-level %DRCLAW_LOG_LEVEL%
 echo.
-echo [Exit] QwenPaw Desktop closed
+echo [Exit] DrClaw Desktop closed
 pause
 "@ | Set-Content -Path $DebugBat -Encoding ASCII
 
 # VBScript launcher (no console window)
-$LauncherVbs = Join-Path $EnvRoot "QwenPaw Desktop.vbs"
+$LauncherVbs = Join-Path $EnvRoot "DrClaw Desktop.vbs"
 @"
 Set WshShell = CreateObject("WScript.Shell")
-batPath = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName) & "\QwenPaw Desktop.bat"
+batPath = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName) & "\DrClaw Desktop.bat"
 WshShell.Run Chr(34) & batPath & Chr(34), 0, False
 Set WshShell = Nothing
 "@ | Set-Content -Path $LauncherVbs -Encoding ASCII
-
-# Create qwenpaw.cmd wrapper in env root so "qwenpaw" resolves to this
-# instead of Scripts\qwenpaw.exe whose embedded Python path may be stale
-# after conda-pack/unpack.
-$QwenpawCmd = Join-Path $EnvRoot "qwenpaw.cmd"
-@"
-@"%~dp0python.exe" -u -m qwenpaw %*
-"@ | Set-Content -Path $QwenpawCmd -Encoding ASCII
 
 # Copy icon.ico to env root so NSIS can find it
 $IconSrc = Join-Path $PackDir "assets\icon.ico"
@@ -353,7 +368,7 @@ if (-not $Version) {
 if (-not $Version) { $Version = "0.0.0"; Write-Host "[build_win] WARN: Using fallback version 0.0.0" }
 Write-Host "[build_win] Version determined: $Version"
 Write-Host "[build_win] QWENPAW_VERSION=$Version OUTPUT_EXE will be under $Dist"
-$OutInstaller = Join-Path (Join-Path $RepoRoot $Dist) "QwenPaw-Setup-$Version.exe"
+$OutInstaller = Join-Path (Join-Path $RepoRoot $Dist) "DrClaw-Setup-$Version.exe"
 # Pass absolute paths to NSIS (keep backslashes).
 $UnpackedFull = (Resolve-Path $EnvRoot).Path
 $OutputExeNsi = [System.IO.Path]::GetFullPath($OutInstaller)

@@ -8,7 +8,11 @@ use super::BackendState;
 
 const MAX_CAPTURED_STDERR_CHARS: usize = 4000;
 const STDERR_TRUNCATION_MARKER: &str = "\n[...stderr truncated...]\n";
-const BACKEND_READY_PREFIX: &str = "QWENPAW_BACKEND_READY ";
+const BACKEND_READY_PREFIXES: &[&str] = &[
+    "DRCLAW_BACKEND_READY ",
+    "QWENPAW_BACKEND_READY ",
+    "COPAW_BACKEND_READY ",
+];
 
 #[derive(Deserialize)]
 struct BackendReadyPayload {
@@ -63,7 +67,10 @@ pub(super) fn watch(
 
 fn ready_port_from_stdout(text: &str) -> Option<u16> {
     text.lines().find_map(|line| {
-        let payload = line.trim().strip_prefix(BACKEND_READY_PREFIX)?;
+        let trimmed = line.trim();
+        let payload = BACKEND_READY_PREFIXES
+            .iter()
+            .find_map(|prefix| trimmed.strip_prefix(prefix))?;
         serde_json::from_str::<BackendReadyPayload>(payload)
             .ok()
             .map(|ready| ready.port)
@@ -137,9 +144,21 @@ mod tests {
 
     #[test]
     fn ready_port_from_stdout_parses_protocol_line() {
-        let text = "INFO before\nQWENPAW_BACKEND_READY {\"port\":54321}\n";
+        let text = "INFO before\nDRCLAW_BACKEND_READY {\"port\":54321}\n";
 
         assert_eq!(ready_port_from_stdout(text), Some(54321));
+    }
+
+    #[test]
+    fn ready_port_from_stdout_accepts_legacy_prefixes() {
+        assert_eq!(
+            ready_port_from_stdout("QWENPAW_BACKEND_READY {\"port\":1234}"),
+            Some(1234)
+        );
+        assert_eq!(
+            ready_port_from_stdout("COPAW_BACKEND_READY {\"port\":5678}"),
+            Some(5678)
+        );
     }
 
     #[test]

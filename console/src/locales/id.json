@@ -100,7 +100,7 @@
       "title": "Versi baru tersedia: v{{version}}",
       "viewReleases": "Lihat Rilis",
       "installDesktopUpdate": "Perbarui Sekarang",
-      "desktopInstallHint": "QwenPaw Desktop {{version}} siap dipasang. Aplikasi akan dimulai ulang setelah pembaruan.",
+      "desktopInstallHint": "Dr.Claw Desktop {{version}} siap dipasang. Aplikasi akan dimulai ulang setelah pembaruan.",
       "checking": "Memeriksa pembaruan…",
       "checkingHint": "Memeriksa versi terbaru",
       "downloading": "Mengunduh pembaruan",
@@ -117,7 +117,7 @@
       "errors": {
         "network": "Tidak dapat menjangkau server pembaruan. Periksa internet dan coba lagi.",
         "signature": "Tanda tangan file pembaruan tidak valid. Coba unduh lagi.",
-        "appLocation": "QwenPaw berjalan dari lokasi macOS yang hanya-baca. Pindahkan QwenPaw.app ke folder Applications, jalankan dari sana, lalu coba perbarui lagi.",
+        "appLocation": "Dr.Claw berjalan dari lokasi macOS yang hanya-baca. Pindahkan Dr.Claw.app ke folder Applications, jalankan dari sana, lalu coba perbarui lagi.",
         "other": "Pembaruan gagal."
       },
       "updateLater": "Unduh di Latar Belakang",
@@ -136,7 +136,7 @@
     "fullMode": "Mode lengkap"
   },
   "login": {
-    "title": "Masuk ke QwenPaw",
+    "title": "Masuk ke Dr.Claw",
     "registerTitle": "Buat Akun",
     "firstUserHint": "Buat akun admin untuk memulai",
     "usernamePlaceholder": "Nama pengguna",
@@ -152,7 +152,8 @@
     "logout": "Keluar",
     "logoutSuccess": "Berhasil keluar",
     "sessionExpired": "Sesi berakhir, silakan masuk lagi",
-    "unauthorized": "Tidak berwenang, silakan masuk"
+    "unauthorized": "Tidak berwenang, silakan masuk",
+    "loginSuccess": "Login berhasil"
   },
   "chat": {
     "modelSelectTooltip": "Pilih model",
@@ -347,7 +348,7 @@
     "nameRequired": "Masukkan nama agen",
     "namePlaceholder": "contoh: Agen Saya",
     "descriptionPlaceholder": "Jelaskan singkat tujuan agen ini...",
-    "workspaceHelp": "Kosongkan untuk dibuat otomatis di ~/.qwenpaw/workspaces/<id>",
+    "workspaceHelp": "Kosongkan untuk dibuat otomatis di ~/.drclaw/workspaces/<id>",
     "defaultNotEditable": "Agen default tidak dapat diedit",
     "defaultNotDeletable": "Agen default tidak dapat dihapus",
     "disable": "Nonaktifkan",
@@ -743,7 +744,7 @@
     "restoreModeFullDisabled": "Hanya cadangan penuh",
     "restoreCustomSummary": "{{existing}} yang sudah ada · {{added}} baru dipilih",
     "defaultWorkspaceDir": "Direktori ruang kerja default agen",
-    "defaultWorkspaceDirPlaceholder": "Biarkan kosong untuk menggunakan ~/.qwenpaw/workspaces",
+    "defaultWorkspaceDirPlaceholder": "Biarkan kosong untuk menggunakan ~/.drclaw/workspaces",
     "defaultWorkspaceDirHint": "Jika jalur ruang kerja asli agen tidak ada, agen akan disimpan di <jalur default>/<ID agen>. Jika ada, jalur ruang kerja asli agen akan digunakan.",
     "restoreStrategy": "Strategi pemulihan",
     "restoreStrategyPreserve": "Pertahankan keamanan lokal dan MCP",
@@ -990,7 +991,7 @@
   "codingMode": {
     "title": "Mode Coding",
     "experimental": "Fitur Eksperimental",
-    "experimentalDesc": "Mode Coding mengubah QwenPaw menjadi Web IDE ringan dengan editor kode, pohon file, integrasi Git, dan bantuan coding bertenaga AI.",
+    "experimentalDesc": "Mode Coding mengubah Dr.Claw menjadi Web IDE ringan dengan editor kode, pohon file, integrasi Git, dan bantuan coding bertenaga AI.",
     "experimentalNote": "Fitur ini masih eksperimental dan dalam pengembangan aktif. Beberapa fungsi mungkin terbatas atau berubah pada pembaruan mendatang.",
     "confirmBtn": "Aktifkan Mode Coding",
     "enterTooltip": "Masuk ke Mode Coding",
@@ -1425,7 +1426,7 @@
     "providerTypeLocalWhisperDesc": "Jalankan transkripsi secara lokal menggunakan pustaka Python openai-whisper. Memerlukan ffmpeg dan openai-whisper yang terinstal.",
     "localWhisperReady": "Whisper Lokal siap. ffmpeg dan openai-whisper terinstal.",
     "localWhisperMissing": "Whisper Lokal tidak siap. Dependensi yang hilang harus diinstal.",
-    "localWhisperMissingDesc": "ffmpeg: {{ffmpeg}} | openai-whisper: {{whisper}}. Instal dependensi yang hilang: ffmpeg (paket sistem) dan openai-whisper (uv pip install openai-whisper, atau instal QwenPaw dengan ekstra [whisper]).",
+    "localWhisperMissingDesc": "ffmpeg: {{ffmpeg}} | openai-whisper: {{whisper}}. Instal dependensi yang hilang: ffmpeg (paket sistem) dan openai-whisper (uv pip install openai-whisper, atau instal Dr.Claw dengan ekstra [whisper]).",
     "providerLabel": "Penyedia Whisper API",
     "providerDescription": "Pilih penyedia mana yang akan digunakan untuk transkripsi audio melalui Whisper API. Hanya penyedia dengan endpoint yang kompatibel dengan Whisper yang ditampilkan.",
     "providerPlaceholder": "Pilih penyedia...",
@@ -1919,7 +1920,7 @@
     "contextManagementTitle": "Manajemen Konteks",
     "memoryManagerBackend": "Backend Manajer Memori",
     "memoryManagerBackendTooltip": "Backend untuk manajer memori. Pilih remelight (file lokal) atau adbpg (database cloud).",
-    "memoryManagerBackendRestartWarning": "Mengalihkan backend manajer memori tidak mendukung hot reload. Simpan dan restart QwenPaw agar perubahan berlaku.",
+    "memoryManagerBackendRestartWarning": "Mengalihkan backend manajer memori tidak mendukung hot reload. Simpan dan restart Dr.Claw agar perubahan berlaku.",
     "maxIters": "Iterasi Maksimum",
     "maxItersTooltip": "Jumlah maksimum iterasi penalaran-tindakan untuk agen ReAct",
     "maxItersPlaceholder": "Masukkan iterasi maksimum",
@@ -2175,10 +2176,10 @@
     "contextManagerBackend": "Backend Manajer Konteks",
     "contextManagerBackendTooltip": "Jenis backend untuk manajer konteks. Saat ini hanya Light yang didukung.",
     "contextStrategy": "Strategi Konteks",
-    "contextStrategyTooltip": "Cara agen mengelola konteks panjang. Scroll (disarankan) menyimpan giliran yang dievakuasi ke penyimpanan riwayat permanen dan memanggilnya kembali sesuai kebutuhan; Native menggunakan kompresi di tempat. Mulai ulang QwenPaw agar perubahan diterapkan.",
+    "contextStrategyTooltip": "Cara agen mengelola konteks panjang. Scroll (disarankan) menyimpan giliran yang dievakuasi ke penyimpanan riwayat permanen dan memanggilnya kembali sesuai kebutuhan; Native menggunakan kompresi di tempat. Mulai ulang Dr.Claw agar perubahan diterapkan.",
     "contextStrategyScroll": "Scroll",
     "contextStrategyNative": "Native",
-    "backendRestartWarning": "Mengalihkan backend tidak mendukung hot reload. Simpan dan restart QwenPaw agar perubahan berlaku.",
+    "backendRestartWarning": "Mengalihkan backend tidak mendukung hot reload. Simpan dan restart Dr.Claw agar perubahan berlaku.",
     "adbpgMemoryTitle": "Memori Jangka Panjang ADBPG",
     "adbpgConfig": {
       "title": "Konfigurasi Memori ADBPG",

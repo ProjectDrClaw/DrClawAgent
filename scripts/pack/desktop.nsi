@@ -1,6 +1,6 @@
-; QwenPaw Desktop NSIS installer. Run makensis from repo root after
+; DrClaw Desktop NSIS installer. Run makensis from repo root after
 ; building dist/win-unpacked (see scripts/pack/build_win.ps1).
-; Usage: makensis /DQWENPAW_VERSION=1.2.3 /DOUTPUT_EXE=dist\QwenPaw-Setup-1.2.3.exe scripts\pack\desktop.nsi
+; Usage: makensis /DQWENPAW_VERSION=1.2.3 /DOUTPUT_EXE=dist\DrClaw-Setup-1.2.3.exe scripts\pack\desktop.nsi
 
 !include "MUI2.nsh"
 !define MUI_ABORTWARNING
@@ -12,13 +12,13 @@
   !define QWENPAW_VERSION "0.0.0"
 !endif
 !ifndef OUTPUT_EXE
-  !define OUTPUT_EXE "dist\QwenPaw-Setup-${QWENPAW_VERSION}.exe"
+  !define OUTPUT_EXE "dist\DrClaw-Setup-${QWENPAW_VERSION}.exe"
 !endif
 
-Name "QwenPaw Desktop"
+Name "DrClaw Desktop"
 OutFile "${OUTPUT_EXE}"
-InstallDir "$LOCALAPPDATA\QwenPaw"
-InstallDirRegKey HKCU "Software\QwenPaw" "InstallPath"
+InstallDir "$LOCALAPPDATA\DrClaw"
+InstallDirRegKey HKCU "Software\DrClaw" "InstallPath"
 RequestExecutionLevel user
 
 !insertmacro MUI_PAGE_DIRECTORY
@@ -33,24 +33,24 @@ RequestExecutionLevel user
   !define UNPACKED "dist\win-unpacked"
 !endif
 
-Section "QwenPaw Desktop" SEC01
+Section "DrClaw Desktop" SEC01
   SetOutPath "$INSTDIR"
   File /r "${UNPACKED}\*.*"
-  WriteRegStr HKCU "Software\QwenPaw" "InstallPath" "$INSTDIR"
+  WriteRegStr HKCU "Software\DrClaw" "InstallPath" "$INSTDIR"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
   ; Main shortcut - uses VBS to hide console window
-  CreateShortcut "$SMPROGRAMS\QwenPaw Desktop.lnk" "$INSTDIR\QwenPaw Desktop.vbs" "" "$INSTDIR\icon.ico" 0
-  CreateShortcut "$DESKTOP\QwenPaw Desktop.lnk" "$INSTDIR\QwenPaw Desktop.vbs" "" "$INSTDIR\icon.ico" 0
+  CreateShortcut "$SMPROGRAMS\DrClaw Desktop.lnk" "$INSTDIR\DrClaw Desktop.vbs" "" "$INSTDIR\icon.ico" 0
+  CreateShortcut "$DESKTOP\DrClaw Desktop.lnk" "$INSTDIR\DrClaw Desktop.vbs" "" "$INSTDIR\icon.ico" 0
   
   ; Debug shortcut - shows console window for troubleshooting
-  CreateShortcut "$SMPROGRAMS\QwenPaw Desktop (Debug).lnk" "$INSTDIR\QwenPaw Desktop (Debug).bat" "" "$INSTDIR\icon.ico" 0
+  CreateShortcut "$SMPROGRAMS\DrClaw Desktop (Debug).lnk" "$INSTDIR\DrClaw Desktop (Debug).bat" "" "$INSTDIR\icon.ico" 0
 SectionEnd
 
 Section "Uninstall"
-  Delete "$SMPROGRAMS\QwenPaw Desktop.lnk"
-  Delete "$SMPROGRAMS\QwenPaw Desktop (Debug).lnk"
-  Delete "$DESKTOP\QwenPaw Desktop.lnk"
+  Delete "$SMPROGRAMS\DrClaw Desktop.lnk"
+  Delete "$SMPROGRAMS\DrClaw Desktop (Debug).lnk"
+  Delete "$DESKTOP\DrClaw Desktop.lnk"
   RMDir /r "$INSTDIR"
-  DeleteRegKey HKCU "Software\QwenPaw"
+  DeleteRegKey HKCU "Software\DrClaw"
 SectionEnd

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Authentication module: password hashing, JWT tokens, and FastAPI middleware.
 
-Login is disabled by default and only enabled when the environment
-variable ``QWENPAW_AUTH_ENABLED`` is set to a truthy value (``true``,
-``1``, ``yes``).  Credentials are created through a web-based
-registration flow rather than environment variables, so that agents
-running inside the process cannot read plaintext passwords.
+Login is enabled by default for Dr.Claw private deployments. Set
+``DRCLAW_AUTH_ENABLED`` to ``false`` / ``0`` / ``no`` to disable
+(``QWENPAW_*`` / ``COPAW_*`` aliases still work).  Credentials are created
+through a web-based registration flow rather than environment variables,
+so that agents running inside the process cannot read plaintext passwords.
 
 Single-user design: only one account can be registered.  If the user
 forgets their password, delete ``auth.json`` from ``SECRET_DIR`` and
@@ -335,12 +335,13 @@ def _clean_expired_revocations() -> None:
 def is_auth_enabled() -> bool:
     """Check whether authentication is enabled via environment variable.
 
-    Returns ``True`` when ``QWENPAW_AUTH_ENABLED`` is set to a truthy
-    value (``true``, ``1``, ``yes``).  The presence of a registered
-    user is checked separately by the middleware so that the first
-    user can still reach the registration page.
+    Returns ``True`` when ``DRCLAW_AUTH_ENABLED``（兼容 ``QWENPAW_*`` /
+    ``COPAW_*``）is set to a truthy value (``true``, ``1``, ``yes``).
+    Dr.Claw 私有化默认开启；显式设为 ``false`` / ``0`` / ``no`` 可关闭。
+    The presence of a registered user is checked separately by the
+    middleware so that the first user can still reach the registration page.
     """
-    env_flag = EnvVarLoader.get_str("QWENPAW_AUTH_ENABLED", "").strip().lower()
+    env_flag = EnvVarLoader.get_str("DRCLAW_AUTH_ENABLED", "true").strip().lower()
     return env_flag in ("true", "1", "yes")
 
 
@@ -394,8 +395,8 @@ def register_user(
 def auto_register_from_env() -> None:
     """Auto-register admin user from environment variables.
 
-    Called once during application startup.  If ``QWENPAW_AUTH_ENABLED``
-    is truthy and both ``QWENPAW_AUTH_USERNAME`` and ``QWENPAW_AUTH_PASSWORD``
+    Called once during application startup.  If ``DRCLAW_AUTH_ENABLED``
+    is truthy and both ``DRCLAW_AUTH_USERNAME`` and ``DRCLAW_AUTH_PASSWORD``
     are set, the admin account is created automatically — useful for
     Docker, Kubernetes, server-panel, and other automated deployments
     where interactive web registration is not practical.
@@ -410,8 +411,8 @@ def auto_register_from_env() -> None:
     if has_registered_users():
         return
 
-    username = EnvVarLoader.get_str("QWENPAW_AUTH_USERNAME", "").strip()
-    password = EnvVarLoader.get_str("QWENPAW_AUTH_PASSWORD", "").strip()
+    username = EnvVarLoader.get_str("DRCLAW_AUTH_USERNAME", "").strip()
+    password = EnvVarLoader.get_str("DRCLAW_AUTH_PASSWORD", "").strip()
     if not username or not password:
         return
 

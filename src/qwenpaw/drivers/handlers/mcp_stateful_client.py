@@ -28,6 +28,11 @@ from mcp.client.stdio import StdioServerParameters
 from mcp.client.sse import sse_client
 from mcp.client.streamable_http import streamable_http_client
 
+from ...app.mcp.constants import (
+    MCP_CONNECT_TIMEOUT_SECONDS,
+    MCP_READ_TIMEOUT_SECONDS,
+)
+
 logger = logging.getLogger(__name__)
 
 # anyio is a required transitive dependency of the mcp package, so it is
@@ -212,14 +217,14 @@ class _MCPClientMixin:
 
         logger.info(f"MCP client lifecycle task exited: {self.name}")
 
-    async def connect(self, timeout: float = 30.0) -> None:
+    async def connect(self, timeout: float = MCP_CONNECT_TIMEOUT_SECONDS) -> None:
         """Connect to the MCP server.
 
         Starts the background lifecycle task and waits until the first
         connection is established.
 
         Args:
-            timeout: Connection timeout in seconds (default 30 s).
+            timeout: Connection timeout in seconds (default MCP_CONNECT).
 
         Raises:
             RuntimeError: If already connected.
@@ -267,11 +272,14 @@ class _MCPClientMixin:
                 "(HTTP 401). Please authorize via the UI before connecting.",
             )
 
-    async def reload(self, timeout: float = 30.0) -> None:
+    async def reload(
+        self,
+        timeout: float = MCP_CONNECT_TIMEOUT_SECONDS,
+    ) -> None:
         """Reload the MCP client (tear down and reconnect).
 
         Args:
-            timeout: Reconnection timeout in seconds (default 30 s).
+            timeout: Reconnection timeout in seconds (default MCP_CONNECT).
 
         Raises:
             RuntimeError: If not connected.
@@ -629,7 +637,7 @@ class StdIOStatefulClient(_MCPClientMixin):
             "ignore",
             "replace",
         ] = "strict",
-        read_timeout_seconds: float = 60 * 5,
+        read_timeout_seconds: float = MCP_READ_TIMEOUT_SECONDS,
     ) -> None:
         """Initialize the StdIO MCP client.
 
@@ -710,8 +718,8 @@ class HttpStatefulClient(_MCPClientMixin):
         transport: Any,
         url: Any,
         headers: dict[str, str] | None = None,
-        timeout: float = 30,
-        sse_read_timeout: float = 60 * 5,
+        timeout: float = MCP_CONNECT_TIMEOUT_SECONDS,
+        sse_read_timeout: float = MCP_READ_TIMEOUT_SECONDS,
         **client_kwargs: Any,
     ) -> None:
         """Initialize the HTTP MCP client.

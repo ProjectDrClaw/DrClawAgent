@@ -1,51 +1,55 @@
-/** CDN URLs for channel logos — used as primary icon with letter-avatar fallback. */
+import dingtalk from "@/assets/channels/dingtalk.png";
+import voice from "@/assets/channels/voice.png";
+import sip from "@/assets/channels/sip.png";
+import qq from "@/assets/channels/qq.png";
+import feishu from "@/assets/channels/feishu.png";
+import xiaoyi from "@/assets/channels/xiaoyi.png";
+import telegram from "@/assets/channels/telegram.png";
+import mqtt from "@/assets/channels/mqtt.png";
+import imessage from "@/assets/channels/imessage.png";
+import discord from "@/assets/channels/discord.png";
+import mattermost from "@/assets/channels/mattermost.png";
+import matrix from "@/assets/channels/matrix.png";
+import consoleIcon from "@/assets/channels/console.png";
+import wecom from "@/assets/channels/wecom.png";
+import wechat from "@/assets/channels/wechat.png";
+import onebot from "@/assets/channels/onebot.png";
+import yuanbao from "@/assets/channels/yuanbao.png";
+import defaultImg from "@/assets/channels/default.png";
+
+/** 各 channel 离线图标 URL 映射（slack 老库无本地图，暂用 CDN） */
 export const CHANNEL_ICON_URLS: Record<string, string> = {
-  dingtalk:
-    "https://gw.alicdn.com/imgextra/i4/O1CN01g1u9vB1KdEreWzDdv_!!6000000001186-2-tps-400-400.png",
-  voice:
-    "https://gw.alicdn.com/imgextra/i1/O1CN016SJ9AO1SpA6L3j0KH_!!6000000002295-2-tps-400-400.png",
-  sip: "https://gw.alicdn.com/imgextra/i1/O1CN016SJ9AO1SpA6L3j0KH_!!6000000002295-2-tps-400-400.png",
-  qq: "https://gw.alicdn.com/imgextra/i3/O1CN014wGNgd27PsTzAyrcj_!!6000000007790-2-tps-400-400.png",
-  feishu:
-    "https://gw.alicdn.com/imgextra/i4/O1CN01jsn08m225euyUoaFN_!!6000000007069-2-tps-400-400.png",
-  xiaoyi:
-    "https://gw.alicdn.com/imgextra/i1/O1CN01EPS9Z81OKhIEcwpCd_!!6000000001687-2-tps-476-476.png",
-  telegram:
-    "https://gw.alicdn.com/imgextra/i2/O1CN0100jIva25Dqqq1VqJN_!!6000000007493-2-tps-400-400.png",
+  dingtalk,
+  voice,
+  sip,
+  qq,
+  feishu,
+  xiaoyi,
+  telegram,
   slack:
     "https://gw.alicdn.com/imgextra/i2/O1CN01JcOK7v1GqHhRjG0fy_!!6000000000673-2-tps-512-512.png",
-  mqtt: "https://gw.alicdn.com/imgextra/i2/O1CN0117Adu3282o9G5ZNCd_!!6000000007875-2-tps-400-400.png",
-  imessage:
-    "https://gw.alicdn.com/imgextra/i1/O1CN016pwG4m1uEntwJKsGl_!!6000000006006-2-tps-400-400.png",
-  discord:
-    "https://gw.alicdn.com/imgextra/i4/O1CN01BQFnBu21PWTtKbPmU_!!6000000006977-2-tps-400-400.png",
-  mattermost:
-    "https://gw.alicdn.com/imgextra/i2/O1CN01A2bvSh1eVig4fDBEF_!!6000000003877-2-tps-400-400.png",
-  matrix:
-    "https://gw.alicdn.com/imgextra/i2/O1CN01Q8i1P826mUQG4dCAs_!!6000000007704-2-tps-400-400.png",
-  console:
-    "https://gw.alicdn.com/imgextra/i3/O1CN01L3azqd1XIi7O2jumZ_!!6000000002901-2-tps-400-400.png",
-  wecom:
-    "https://gw.alicdn.com/imgextra/i1/O1CN01HWtzmr1hkK9beQICJ_!!6000000004315-2-tps-400-400.png",
-  wechat:
-    "https://gw.alicdn.com/imgextra/i4/O1CN01GsAob11fkfDWVIb3R_!!6000000004045-2-tps-400-400.png",
-  onebot:
-    "https://gw.alicdn.com/imgextra/i3/O1CN01xqM0EN1oKrRiAFX3K_!!6000000005207-2-tps-400-400.png",
-  yuanbao:
-    "https://img.alicdn.com/imgextra/i4/O1CN0164yBmJ1a2AftSglge_!!6000000003271-2-tps-225-225.png",
+  mqtt,
+  imessage,
+  discord,
+  mattermost,
+  matrix,
+  console: consoleIcon,
+  wecom,
+  wechat,
+  onebot,
+  yuanbao,
 };
 
-export const CHANNEL_DEFAULT_ICON_URL =
-  "https://gw.alicdn.com/imgextra/i3/O1CN01xqM0EN1oKrRiAFX3K_!!6000000005207-2-tps-400-400.png";
+export const CHANNEL_DEFAULT_ICON_URL = defaultImg;
 
-/** Get the CDN icon URL for a channel, with a default fallback. */
+/** Get the icon URL for a channel, with a default fallback. */
 export function getChannelIconUrl(channelKey: string): string {
   return CHANNEL_ICON_URLS[channelKey] ?? CHANNEL_DEFAULT_ICON_URL;
 }
 
 /** Predefined background colors for letter-avatar icons. */
 const LETTER_ICON_COLORS: Record<string, string> = {
-  console: "#FF7F16",
+  console: "#2657C9",
   onebot: "#6ECB63",
   dingtalk: "#3370FF",
   feishu: "#3370FF",
@@ -61,7 +65,8 @@ const LETTER_ICON_COLORS: Record<string, string> = {
   imessage: "#34C759",
   voice: "#F44336",
   xiaoyi: "#CF1322",
-  yuanbao: "#1677FF",
+  yuanbao: "#2657C9",
+  openim: "#1C64F2",
 };
 
 /** A palette of fallback colors for channels without a predefined color. */

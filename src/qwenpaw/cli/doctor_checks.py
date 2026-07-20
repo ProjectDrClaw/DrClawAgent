@@ -889,6 +889,21 @@ def enabled_channel_notes(cfg: Config) -> list[str]:
                         f"{agent_id}: feishu enabled but "
                         "app_id/app_secret incomplete",
                     )
+            elif name == "openim":
+                if (
+                    not (getattr(sub, "api_url", "") or "").strip()
+                    or not (getattr(sub, "app_id", "") or "").strip()
+                    or not (getattr(sub, "app_secret", "") or "").strip()
+                ):
+                    notes.append(
+                        f"{agent_id}: openim enabled but "
+                        "api_url/app_id/app_secret incomplete",
+                    )
+                elif importlib.util.find_spec("openim_sdk") is None:
+                    notes.append(
+                        f"{agent_id}: openim enabled but openim-sdk-core "
+                        "missing (reinstall qwenpaw)",
+                    )
             elif name == "qq":
                 if (
                     not (sub.app_id or "").strip()

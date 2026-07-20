@@ -3,22 +3,20 @@ import {
   getChannelIconUrl,
   getChannelLetterColor,
   CHANNEL_DEFAULT_ICON_URL,
+  CHANNEL_ICON_URLS,
 } from "./channelIcons";
 
 describe("getChannelIconUrl", () => {
-  it("returns specific CDN URL for known channel 'dingtalk'", () => {
+  it("returns local asset for known channel 'dingtalk'", () => {
     const url = getChannelIconUrl("dingtalk");
-    expect(url).toMatch(/^https:\/\/gw\.alicdn\.com/);
-    expect(url).toBe(
-      "https://gw.alicdn.com/imgextra/i4/O1CN01g1u9vB1KdEreWzDdv_!!6000000001186-2-tps-400-400.png",
-    );
+    expect(url).toBe(CHANNEL_ICON_URLS.dingtalk);
+    expect(typeof url).toBe("string");
+    expect(url.length).toBeGreaterThan(0);
   });
 
-  it("returns specific CDN URL for known channel 'discord'", () => {
+  it("returns local asset for known channel 'discord'", () => {
     const url = getChannelIconUrl("discord");
-    expect(url).toBe(
-      "https://gw.alicdn.com/imgextra/i4/O1CN01BQFnBu21PWTtKbPmU_!!6000000006977-2-tps-400-400.png",
-    );
+    expect(url).toBe(CHANNEL_ICON_URLS.discord);
   });
 
   it("returns CHANNEL_DEFAULT_ICON_URL for unknown channel", () => {
@@ -26,16 +24,15 @@ describe("getChannelIconUrl", () => {
     expect(url).toBe(CHANNEL_DEFAULT_ICON_URL);
   });
 
-  it("CHANNEL_DEFAULT_ICON_URL is a non-empty string starting with 'https://'", () => {
+  it("CHANNEL_DEFAULT_ICON_URL is a non-empty string", () => {
     expect(CHANNEL_DEFAULT_ICON_URL).toBeTruthy();
     expect(typeof CHANNEL_DEFAULT_ICON_URL).toBe("string");
-    expect(CHANNEL_DEFAULT_ICON_URL).toMatch(/^https:\/\//);
   });
 });
 
 describe("getChannelLetterColor", () => {
-  it("returns predefined color '#FF7F16' for known channel 'console'", () => {
-    expect(getChannelLetterColor("console")).toBe("#FF7F16");
+  it("returns predefined color '#2657C9' for known channel 'console'", () => {
+    expect(getChannelLetterColor("console")).toBe("#2657C9");
   });
 
   it("returns predefined color '#5865F2' for known channel 'discord'", () => {
