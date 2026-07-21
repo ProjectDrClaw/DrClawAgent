@@ -1513,9 +1513,6 @@ export function ChannelDrawer({
             size="small"
             icon={<LinkOutlined />}
             onClick={() => {
-              const url =
-                CHANNEL_DOC_EN_URLS[activeKey]! ||
-                CHANNEL_DOC_ZH_URLS[activeKey]!;
               const finalUrl =
                 currentLang === "zh"
                   ? (CHANNEL_DOC_ZH_URLS[activeKey] ||

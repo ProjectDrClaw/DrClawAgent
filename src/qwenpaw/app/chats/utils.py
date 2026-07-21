@@ -100,14 +100,14 @@ def build_env_context(
     powered = f", powered by {active_model_name}" if active_model_name else ""
     parts.append(
         f"- About: You are a personal AI assistant{powered}. "
-        f"You operate in QwenPaw, an open-source agent "
-        f"framework built by AgentScope team from Qwen lab.",
+        f"You operate in Dr.Claw, a dedicated AI assistant "
+        f"for medical staff across all clinical scenarios.",
     )
     parts.append(
-        "- GitHub: https://github.com/agentscope-ai/QwenPaw",
+        "- GitHub: https://github.com/ProjectDrClaw/DrClawAgent",
     )
     parts.append(
-        "- Docs: https://qwenpaw.agentscope.io/",
+        "- Docs: https://github.com/ProjectDrClaw/DrClawAgent/tree/main/docs",
     )
     user_tz = load_config().user_timezone or "UTC"
     try:
