@@ -1,6 +1,6 @@
 # Reusable verification gate: install the built artefacts, boot the server,
 # and hit /api/version before any publish step runs.
-# Called by docker-release.yml and fork-verify.yml.
+# Called by docker-release.yml.
 
 name: Release Verification
 
