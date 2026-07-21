@@ -83,9 +83,11 @@ jobs:
           IS_PRERELEASE: ${{ steps.vars.outputs.is_prerelease }}
           DRCLAW_DISABLED_CHANNELS: "imessage"
         run: |
-          TAGS="-t ${GITHUB_REGISTRY}/${IMAGE}:${VERSION} -t ${GITHUB_REGISTRY}/${IMAGE}:pre"
+          # GHCR 仓库名必须全小写（owner 可能含大写，如 ProjectDrClaw）
+          IMAGE_REF="$(echo "${GITHUB_REGISTRY}/${IMAGE}" | tr '[:upper:]' '[:lower:]')"
+          TAGS="-t ${IMAGE_REF}:${VERSION} -t ${IMAGE_REF}:pre"
           if [ "${IS_PRERELEASE}" != "true" ]; then
-            TAGS="${TAGS} -t ${GITHUB_REGISTRY}/${IMAGE}:latest"
+            TAGS="${TAGS} -t ${IMAGE_REF}:latest"
           fi
           docker buildx build --platform linux/amd64,linux/arm64 \
             -f deploy/Dockerfile \
