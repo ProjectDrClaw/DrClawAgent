@@ -21,6 +21,8 @@ function VoiceTranscriptionPage() {
     setProviderType,
     selectedProviderId,
     setSelectedProviderId,
+    transcriptionModel,
+    setTranscriptionModel,
     localWhisperStatus,
     availableProviders,
     showProviderSection,
@@ -79,6 +81,8 @@ function VoiceTranscriptionPage() {
                 availableProviders={availableProviders}
                 selectedProviderId={selectedProviderId}
                 onProviderChange={setSelectedProviderId}
+                transcriptionModel={transcriptionModel}
+                onTranscriptionModelChange={setTranscriptionModel}
               />
             )}
           </>

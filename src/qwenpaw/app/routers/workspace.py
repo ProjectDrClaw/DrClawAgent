@@ -821,6 +821,50 @@ async def put_transcription_provider(
     return {"provider_id": provider_id}
 
 
+@router.get(
+    "/transcription-model",
+    summary="Get transcription model",
+    description=(
+        "Get the model name used for Whisper API transcription "
+        '(e.g. "whisper-1", "SenseVoiceSmall").'
+    ),
+)
+async def get_transcription_model() -> dict:
+    """Get transcription model name."""
+    config = load_config()
+    return {"transcription_model": config.agents.transcription_model}
+
+
+@router.put(
+    "/transcription-model",
+    summary="Set transcription model",
+    description=(
+        "Set the model name for Whisper API transcription. "
+        "Only used when transcription_provider_type is whisper_api."
+    ),
+)
+async def put_transcription_model(
+    body: dict = Body(
+        ...,
+        description=(
+            'Model name, e.g. {"transcription_model": "SenseVoiceSmall"}'
+        ),
+    ),
+) -> dict:
+    """Set the transcription model name."""
+    raw = body.get("transcription_model")
+    model = (str(raw) if raw is not None else "").strip()
+    if not model:
+        raise HTTPException(
+            status_code=400,
+            detail="transcription_model must be a non-empty string",
+        )
+    config = load_config()
+    config.agents.transcription_model = model
+    save_config(config)
+    return {"transcription_model": model}
+
+
 @router.post(
     "/transcribe",
     summary="Transcribe audio to text",

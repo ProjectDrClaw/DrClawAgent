@@ -1,4 +1,4 @@
-import { Card, Select, Alert } from "antd";
+import { Card, Select, Alert, Input } from "antd";
 import { useTranslation } from "react-i18next";
 import type { TranscriptionProvider } from "../useVoiceTranscription";
 import styles from "../index.module.less";
@@ -7,12 +7,16 @@ interface ProviderSelectCardProps {
   availableProviders: TranscriptionProvider[];
   selectedProviderId: string;
   onProviderChange: (id: string) => void;
+  transcriptionModel: string;
+  onTranscriptionModelChange: (model: string) => void;
 }
 
 export function ProviderSelectCard({
   availableProviders,
   selectedProviderId,
   onProviderChange,
+  transcriptionModel,
+  onTranscriptionModelChange,
 }: ProviderSelectCardProps) {
   const { t } = useTranslation();
 
@@ -45,6 +49,19 @@ export function ProviderSelectCard({
           ))}
         </Select>
       )}
+
+      <h3 className={styles.cardTitle} style={{ marginTop: 20 }}>
+        {t("voiceTranscription.modelLabel")}
+      </h3>
+      <p className={styles.cardDescription}>
+        {t("voiceTranscription.modelDescription")}
+      </p>
+      <Input
+        value={transcriptionModel}
+        onChange={(e) => onTranscriptionModelChange(e.target.value)}
+        placeholder={t("voiceTranscription.modelPlaceholder")}
+        style={{ maxWidth: 400 }}
+      />
     </Card>
   );
 }
