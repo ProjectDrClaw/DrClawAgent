@@ -383,6 +383,11 @@ class TestEnqueue:
         ch = _make_channel()
         captured: list[Any] = []
         ch.set_enqueue(captured.append)
+
+        def _no_download(url, msg_id="", video_type=""):
+            return None
+
+        ch._download_video_to_local = _no_download  # type: ignore[method-assign]
         assert ch.enqueue_inbound(
             {
                 "sendID": "user1",
@@ -396,7 +401,74 @@ class TestEnqueue:
                 "serverMsgID": "mv1",
             },
         )
+        # 下载失败时仍保留 VideoContent，便于 media_hook 兜底
         assert captured[0]["content_parts"][0].type == ContentType.VIDEO
+        assert captured[0]["meta"]["duration"] == 12
+
+    def test_ws_inbound_sound_localizes(self, tmp_path, monkeypatch):
+        """语音入站应落盘为本地路径（对齐飞书）。"""
+        ch = _make_channel(workspace_dir=tmp_path)
+        local = tmp_path / "openim_ws" / "media" / "ms1_audio.m4a"
+        local.parent.mkdir(parents=True, exist_ok=True)
+        local.write_bytes(b"voice-bytes")
+
+        def _fake_download(url, msg_id="", sound_type=""):
+            assert url.startswith("https://")
+            return str(local)
+
+        monkeypatch.setattr(ch, "_download_sound_to_local", _fake_download)
+        captured: list[Any] = []
+        ch.set_enqueue(captured.append)
+        assert ch.enqueue_inbound(
+            {
+                "sendID": "user1",
+                "recvID": "drclaw_bot",
+                "sessionType": 1,
+                "contentType": CONTENT_TYPE_SOUND,
+                "content": {
+                    "sourceUrl": "https://cdn.example/a.m4a",
+                    "duration": 3,
+                    "soundType": "m4a",
+                },
+                "serverMsgID": "ms1",
+            },
+        )
+        part = captured[0]["content_parts"][0]
+        assert part.type == ContentType.AUDIO
+        assert part.data == str(local)
+        assert captured[0]["meta"]["duration"] == 3
+
+    def test_ws_inbound_video_localizes_as_file(self, tmp_path, monkeypatch):
+        """视频入站应落盘并改为 FileContent（对齐飞书 media）。"""
+        ch = _make_channel(workspace_dir=tmp_path)
+        local = tmp_path / "openim_ws" / "media" / "mv1_video.mp4"
+        local.parent.mkdir(parents=True, exist_ok=True)
+        local.write_bytes(b"video-bytes")
+
+        def _fake_download(url, msg_id="", video_type=""):
+            assert url.startswith("https://")
+            return str(local)
+
+        monkeypatch.setattr(ch, "_download_video_to_local", _fake_download)
+        captured: list[Any] = []
+        ch.set_enqueue(captured.append)
+        assert ch.enqueue_inbound(
+            {
+                "sendID": "user1",
+                "recvID": "drclaw_bot",
+                "sessionType": 1,
+                "contentType": CONTENT_TYPE_VIDEO,
+                "content": {
+                    "videoUrl": "https://cdn.example/v.mp4",
+                    "duration": 12,
+                    "videoType": "mp4",
+                },
+                "serverMsgID": "mv1",
+            },
+        )
+        part = captured[0]["content_parts"][0]
+        assert part.type == ContentType.FILE
+        assert part.file_url == str(local)
         assert captured[0]["meta"]["duration"] == 12
 
     def test_ws_inbound_picture(self):
@@ -419,8 +491,25 @@ class TestEnqueue:
         assert part.type == ContentType.IMAGE
         assert part.image_url.endswith("p.png")
 
-    def test_ws_inbound_file(self):
-        ch = _make_channel()
+    def test_ws_inbound_file_localizes(self, tmp_path, monkeypatch):
+        """文件入站应落盘为本地 FileContent（对齐飞书）。"""
+        ch = _make_channel(workspace_dir=tmp_path)
+        local = tmp_path / "openim_ws" / "media" / "file-1_file.pdf"
+        local.parent.mkdir(parents=True, exist_ok=True)
+        local.write_bytes(b"%PDF")
+
+        def _fake_download(
+            url,
+            msg_id="",
+            kind="media",
+            type_hint="",
+            default_ext="bin",
+        ):
+            assert url.startswith("https://")
+            assert kind == "file"
+            return str(local)
+
+        monkeypatch.setattr(ch, "_download_media_to_local", _fake_download)
         captured: list[Any] = []
         ch.set_enqueue(captured.append)
         assert ch.enqueue_inbound(
@@ -438,6 +527,32 @@ class TestEnqueue:
         )
         part = captured[0]["content_parts"][0]
         assert part.type == ContentType.FILE
+        assert part.file_url == str(local)
+        assert part.filename == "doc.pdf"
+
+    def test_ws_inbound_file_keeps_remote_on_download_fail(self):
+        ch = _make_channel()
+        captured: list[Any] = []
+        ch.set_enqueue(captured.append)
+        ch._download_media_to_local = (  # type: ignore[method-assign]
+            lambda *a, **k: None
+        )
+        assert ch.enqueue_inbound(
+            {
+                "sendID": "user1",
+                "recvID": "drclaw_bot",
+                "sessionType": 1,
+                "contentType": CONTENT_TYPE_FILE,
+                "content": {
+                    "sourceUrl": "https://cdn.example/doc.pdf",
+                    "fileName": "doc.pdf",
+                },
+                "serverMsgID": "file-2",
+            },
+        )
+        part = captured[0]["content_parts"][0]
+        assert part.type == ContentType.FILE
+        assert part.file_url.endswith("doc.pdf")
         assert part.filename == "doc.pdf"
 
     def test_dedup_by_server_msg_id(self):

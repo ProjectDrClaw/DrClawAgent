@@ -7,10 +7,14 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import mimetypes
 import os
+import urllib.request
 from collections import OrderedDict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from urllib.parse import urlparse
+from uuid import uuid4
 
 from qwenpaw.schemas import (
     AudioContent,
@@ -536,6 +540,200 @@ class OpenIMChannel(BaseChannel):
             base = Path.cwd() / ".openim_ws"
         return Path(base) / "openim_ws"
 
+    def _media_dir(self) -> Path:
+        path = self._data_dir() / "media"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def _download_media_to_local(
+        self,
+        url: str,
+        *,
+        msg_id: str = "",
+        kind: str = "media",
+        type_hint: str = "",
+        default_ext: str = "bin",
+    ) -> Optional[str]:
+        """下载远程媒体到本地 media_dir（对齐飞书落盘后再入队）。"""
+        raw = (url or "").strip()
+        if not raw:
+            return None
+        if os.path.isfile(raw):
+            return raw
+        if raw.startswith("file://"):
+            local = urllib.request.url2pathname(urlparse(raw).path)
+            return local if os.path.isfile(local) else None
+
+        ext = ""
+        if type_hint:
+            if "/" in type_hint:
+                ext = type_hint.rsplit("/", 1)[-1]
+            else:
+                ext = type_hint.lstrip(".")
+        if not ext:
+            path_name = urlparse(raw).path
+            guessed = mimetypes.guess_extension(
+                mimetypes.guess_type(path_name)[0] or "",
+            )
+            if guessed:
+                ext = guessed.lstrip(".")
+            else:
+                suffix = Path(path_name).suffix.lstrip(".")
+                ext = suffix or default_ext
+        safe_id = "".join(c for c in (msg_id or uuid4().hex) if c.isalnum())[
+            :32
+        ] or uuid4().hex
+        dest = self._media_dir() / f"{safe_id}_{kind}.{ext}"
+        try:
+            urllib.request.urlretrieve(raw, dest)  # noqa: S310
+            if dest.is_file() and dest.stat().st_size > 0:
+                return str(dest.resolve())
+            logger.warning("openim %s download empty: %s", kind, raw[:120])
+            return None
+        except Exception:
+            logger.exception(
+                "openim %s download failed url=%s",
+                kind,
+                raw[:120],
+            )
+            return None
+
+    def _download_sound_to_local(
+        self,
+        url: str,
+        *,
+        msg_id: str = "",
+        sound_type: str = "",
+    ) -> Optional[str]:
+        return self._download_media_to_local(
+            url,
+            msg_id=msg_id,
+            kind="audio",
+            type_hint=sound_type,
+            default_ext="m4a",
+        )
+
+    def _download_video_to_local(
+        self,
+        url: str,
+        *,
+        msg_id: str = "",
+        video_type: str = "",
+    ) -> Optional[str]:
+        return self._download_media_to_local(
+            url,
+            msg_id=msg_id,
+            kind="video",
+            type_hint=video_type,
+            default_ext="mp4",
+        )
+
+    def _localize_audio_parts(
+        self,
+        content_parts: List[Any],
+        *,
+        msg_id: str = "",
+    ) -> List[Any]:
+        """将远程语音 URL 落盘为本地路径。"""
+        out: List[Any] = []
+        for part in content_parts:
+            if getattr(part, "type", None) != ContentType.AUDIO:
+                out.append(part)
+                continue
+            data = getattr(part, "data", None)
+            fmt = str(getattr(part, "format", "") or "")
+            if not isinstance(data, str) or not data.strip():
+                out.append(part)
+                continue
+            local = self._download_sound_to_local(
+                data.strip(),
+                msg_id=msg_id,
+                sound_type=fmt,
+            )
+            if local:
+                out.append(
+                    AudioContent(
+                        type=ContentType.AUDIO,
+                        data=local,
+                        format=fmt or "audio",
+                    ),
+                )
+            else:
+                # 下载失败仍保留原 URL，交由 media_hook 再试
+                out.append(part)
+        return out
+
+    def _localize_video_parts(
+        self,
+        content_parts: List[Any],
+        *,
+        msg_id: str = "",
+        video_type: str = "",
+    ) -> List[Any]:
+        """将远程视频落盘，并按飞书方式改为 FileContent。"""
+        out: List[Any] = []
+        for part in content_parts:
+            if getattr(part, "type", None) != ContentType.VIDEO:
+                out.append(part)
+                continue
+            url = getattr(part, "video_url", None)
+            if not isinstance(url, str) or not url.strip():
+                out.append(part)
+                continue
+            local = self._download_video_to_local(
+                url.strip(),
+                msg_id=msg_id,
+                video_type=video_type,
+            )
+            if local:
+                out.append(
+                    FileContent(
+                        type=ContentType.FILE,
+                        file_url=local,
+                        filename=Path(local).name,
+                    ),
+                )
+            else:
+                out.append(part)
+        return out
+
+    def _localize_file_parts(
+        self,
+        content_parts: List[Any],
+        *,
+        msg_id: str = "",
+    ) -> List[Any]:
+        """将远程文件落盘为本地 FileContent（对齐飞书）。"""
+        out: List[Any] = []
+        for part in content_parts:
+            if getattr(part, "type", None) != ContentType.FILE:
+                out.append(part)
+                continue
+            url = getattr(part, "file_url", None)
+            name = str(getattr(part, "filename", None) or "file").strip() or "file"
+            if not isinstance(url, str) or not url.strip():
+                out.append(part)
+                continue
+            type_hint = Path(name).suffix.lstrip(".")
+            local = self._download_media_to_local(
+                url.strip(),
+                msg_id=msg_id,
+                kind="file",
+                type_hint=type_hint,
+                default_ext="bin",
+            )
+            if local:
+                out.append(
+                    FileContent(
+                        type=ContentType.FILE,
+                        file_url=local,
+                        filename=name if name != "file" else Path(local).name,
+                    ),
+                )
+            else:
+                out.append(part)
+        return out
+
     def _remember_msg_id(self, msg_id: str) -> bool:
         """记录消息 ID；若已处理过则返回 False。"""
         if not msg_id:
@@ -598,12 +796,17 @@ class OpenIMChannel(BaseChannel):
             _, duration, _ = parse_sound_meta(body.get("content"))
             if duration > 0:
                 meta["duration"] = duration
+            video_type = ""
         elif content_type == CONTENT_TYPE_VIDEO:
-            _, duration, snapshot, _ = parse_video_meta(body.get("content"))
+            _, duration, snapshot, video_type = parse_video_meta(
+                body.get("content"),
+            )
             if duration > 0:
                 meta["duration"] = duration
             if snapshot:
                 meta["snapshot_url"] = snapshot
+        else:
+            video_type = ""
         if not self._check_group_mention(is_group, meta):
             logger.debug(
                 "openim skip group message without mention group=%s",
@@ -617,6 +820,22 @@ class OpenIMChannel(BaseChannel):
         )
         if not content_parts:
             return False
+        if content_type == CONTENT_TYPE_SOUND:
+            content_parts = self._localize_audio_parts(
+                content_parts,
+                msg_id=msg_id,
+            )
+        elif content_type == CONTENT_TYPE_VIDEO:
+            content_parts = self._localize_video_parts(
+                content_parts,
+                msg_id=msg_id,
+                video_type=video_type,
+            )
+        elif content_type == CONTENT_TYPE_FILE:
+            content_parts = self._localize_file_parts(
+                content_parts,
+                msg_id=msg_id,
+            )
         native = {
             "channel_id": self.channel,
             "sender_id": send_id,

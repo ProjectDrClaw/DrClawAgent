@@ -18,7 +18,7 @@
 | 收发 | 出站 WS 长连接；发消息仅 WS SDK，无 REST 降级 |
 | 网络 | 仅 DrClawAgent → OpenIM；OpenIM → DrClawAgent **不需要** |
 | App 主对话 | **禁止**直连 `/console/chat` SSE |
-| 当前范围 | 单聊/群聊：**文本、@文本、图片、语音、视频、文件**；群聊支持 `require_mention`；不流式 |
+| 当前范围 | 单聊/群聊：**文本、@文本、图片、语音、视频、文件**；群聊支持 `require_mention`；语音入站落盘后走公共转写（需启用「语音转写」）；视频/文件入站落盘为本地文件（对齐飞书）；不流式 |
 | 机器人在线 | DrClawAgent **独占**登录 `app_id`（OpenIM 机器人 userID；勿在 App 再登同一号） |
 
 ### 1.2 目标

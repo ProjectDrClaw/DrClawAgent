@@ -124,6 +124,11 @@ def _request_input_to_msgs(
                     or getattr(c, "video_url", None)
                     or getattr(c, "url", None)
                 )
+                # AudioContent 使用 ``data`` 存本地路径或 URL（飞书 / OpenIM）
+                if not url and ctype == "audio":
+                    raw_data = getattr(c, "data", None)
+                    if isinstance(raw_data, str) and raw_data.strip():
+                        url = raw_data.strip()
                 if url:
                     url = _ensure_url_scheme(str(url))
                     url_path = urlparse(url).path
@@ -132,6 +137,14 @@ def _request_input_to_msgs(
                         f"{_MEDIA_TYPES[ctype]}/",
                     ):
                         media_type = guessed
+                    elif ctype == "audio":
+                        fmt = str(getattr(c, "format", None) or "").strip()
+                        if fmt.startswith("audio/"):
+                            media_type = fmt
+                        elif fmt:
+                            media_type = f"audio/{fmt.lstrip('.')}"
+                        else:
+                            media_type = "audio/mpeg"
                     else:
                         fallback_ext = "jpeg" if ctype == "image" else "mpeg"
                         media_type = f"{_MEDIA_TYPES[ctype]}/{fallback_ext}"

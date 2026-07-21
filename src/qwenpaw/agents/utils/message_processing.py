@@ -456,24 +456,98 @@ async def process_file_and_media_blocks_in_message(msg) -> None:
         downloaded_files = []
 
         for i, block in enumerate(message.content):
-            # === 2.0 Pydantic DataBlock fast-path ===
-            # Console uploads land as ``DataBlock(URLSource(url=file:///..))``
-            # already pointing at ``media_dir``.  Skip the dict-based
-            # download / mutation entirely (it would replace the Pydantic
-            # block with a dict and break ``msg.has_content_blocks(...)``
-            # in agentscope ``_handle_incoming_messages``).  We only need
-            # the local path for the sibling-text-block injection below.
+            # === 2.0 Pydantic DataBlock ===
             if not isinstance(block, dict):
                 source = getattr(block, "source", None)
                 url = str(getattr(source, "url", "")) if source else ""
+                media_type = (
+                    str(getattr(source, "media_type", "") or "")
+                    if source
+                    else ""
+                )
+                major = media_type.split("/", 1)[0] if media_type else ""
+
+                # 音频：下载（或解析 file://）后走转写 / native 管线
+                if major == "audio" and url:
+                    block_dict = {
+                        "type": "audio",
+                        "source": {
+                            "type": "url",
+                            "url": url,
+                            "media_type": media_type or "audio/mpeg",
+                        },
+                    }
+                    local_path = await _process_single_block(
+                        message.content,
+                        i,
+                        block_dict,
+                    )
+                    if local_path:
+                        downloaded_files.append((i, local_path))
+                    continue
+
+                # 视频：下载到本地后更新路径（不转写）
+                if major == "video" and url:
+                    block_dict = {
+                        "type": "video",
+                        "source": {
+                            "type": "url",
+                            "url": url,
+                            "media_type": media_type or "video/mp4",
+                        },
+                    }
+                    local_path = await _process_single_block(
+                        message.content,
+                        i,
+                        block_dict,
+                    )
+                    if local_path:
+                        downloaded_files.append((i, local_path))
+                    continue
+
+                # 普通文件 / 其它远程 DataBlock：下载后注入本地路径旁注
+                if url and (
+                    url.startswith("http://")
+                    or url.startswith("https://")
+                    or major in ("application", "text", "image")
+                    or not media_type
+                ):
+                    # image 远程也可由此兜底；本地 file:// 走下方分支
+                    if not url.startswith("file://"):
+                        block_dict = {
+                            "type": (
+                                "image"
+                                if major == "image"
+                                else "file"
+                            ),
+                            "source": {
+                                "type": "url",
+                                "url": url,
+                                "media_type": media_type
+                                or "application/octet-stream",
+                            },
+                            "filename": getattr(block, "name", None),
+                        }
+                        local_path = await _process_single_block(
+                            message.content,
+                            i,
+                            block_dict,
+                        )
+                        if local_path:
+                            downloaded_files.append((i, local_path))
+                        continue
+
+                # 其它本地媒体：仅注入「已下载」旁注，保持 DataBlock 形态
                 if url.startswith("file://"):
                     local_path = url.removeprefix("file://")
+                    # Windows: file:///C:/... → /C:/... → C:/...
+                    if (
+                        len(local_path) >= 3
+                        and local_path[0] == "/"
+                        and local_path[2] == ":"
+                    ):
+                        local_path = local_path[1:]
                     downloaded_files.append((i, local_path))
-                # Remote URL or no URL on a Pydantic block: skip silently.
-                # Adding remote-download for Pydantic DataBlock is a
-                # separate feature (would need to also convert the dict
-                # result back into a DataBlock to preserve the array
-                # type homogeneity that 2.0 expects).
                 continue
 
             # === 1.x legacy dict path ===
