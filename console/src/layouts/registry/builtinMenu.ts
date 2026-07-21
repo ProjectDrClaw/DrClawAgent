@@ -72,6 +72,8 @@ export const BUILTIN_MENU: MenuItem[] = [
     icon: SparkMyApplicationLine,
     route: "core.app-center",
     order: 15,
+    // 临时隐藏：私有化暂无可用应用市场/默认应用，恢复时删掉 visible 即可
+    visible: () => false,
   },
 
   // control-group
@@ -288,6 +290,8 @@ export const BUILTIN_MENU: MenuItem[] = [
     icon: SparkPluginLine,
     route: "core.plugin-manager",
     order: 110,
+    // 临时隐藏：私有化暂不暴露插件市场/管理入口，恢复时删掉 visible 即可
+    visible: () => false,
   },
 ];
 
