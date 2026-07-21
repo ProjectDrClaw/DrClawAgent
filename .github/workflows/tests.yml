@@ -269,7 +269,7 @@ jobs:
           # Manual dispatch override -> use whatever the maintainer typed.
           # PR gate -> p0 only (fast feedback)
           # push / workflow_dispatch (no input) -> p0 + p1 (full pre-merge gate)
-                    if [ -n "${DISPATCH_MARKER}" ]; then
+          if [ -n "${DISPATCH_MARKER}" ]; then
             EXPR="${DISPATCH_MARKER}"
           elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             EXPR="integration and p0"
@@ -286,7 +286,7 @@ jobs:
           # Subprocess coverage on the ubuntu/py3.11 entry only. conftest.py
           # treats empty / missing as off, so the other matrix entries do
           # not pay the tracer overhead. Multi-platform coverage is opt-in
-                    QWENPAW_INTEGRATION_COVERAGE: ${{ (matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11') && '1' || '' }}
+          QWENPAW_INTEGRATION_COVERAGE: ${{ (matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11') && '1' || '' }}
           # Windows runners are 2-core and IO-bound; under xdist parallel
           # the default 15s HTTP timeout is too tight and intermittently
           # surfaces as ``httpx.ReadTimeout``. Lift the floor here.
