@@ -5,8 +5,7 @@ export const PYPI_URL = "https://pypi.org/pypi/qwenpaw/json";
 export const GITHUB_URL =
   "https://github.com/ProjectDrClaw/DrClawAgent" as const;
 
-const DOCS_BASE =
-  "https://github.com/ProjectDrClaw/DrClawAgent/tree/main/docs";
+const DOCS_BASE = "https://github.com/ProjectDrClaw/DrClawAgent/tree/main/docs";
 
 // ── Timing ────────────────────────────────────────────────────────────────
 

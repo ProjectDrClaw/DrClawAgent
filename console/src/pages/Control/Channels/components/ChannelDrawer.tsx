@@ -1515,10 +1515,10 @@ export function ChannelDrawer({
             onClick={() => {
               const finalUrl =
                 currentLang === "zh"
-                  ? (CHANNEL_DOC_ZH_URLS[activeKey] ||
-                    CHANNEL_DOC_EN_URLS[activeKey]!)
-                  : (CHANNEL_DOC_EN_URLS[activeKey] ||
-                    CHANNEL_DOC_ZH_URLS[activeKey]!);
+                  ? CHANNEL_DOC_ZH_URLS[activeKey] ||
+                    CHANNEL_DOC_EN_URLS[activeKey]!
+                  : CHANNEL_DOC_EN_URLS[activeKey] ||
+                    CHANNEL_DOC_ZH_URLS[activeKey]!;
               openExternalLink(finalUrl);
             }}
             className={styles.dingtalkDocBtn}

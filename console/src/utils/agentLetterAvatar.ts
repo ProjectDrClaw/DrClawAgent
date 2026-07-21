@@ -34,7 +34,9 @@ export function getAgentLetterAvatarUrl(
   const fontSize = Math.round(size * 0.45);
   const svg = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">`,
-    `<circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="${backgroundColor}"/>`,
+    `<circle cx="${size / 2}" cy="${size / 2}" r="${
+      size / 2
+    }" fill="${backgroundColor}"/>`,
     `<text x="50%" y="50%" dy="0.35em" text-anchor="middle" fill="#ffffff"`,
     ` font-family="Inter, sans-serif" font-size="${fontSize}" font-weight="600">${letter}</text>`,
     `</svg>`,

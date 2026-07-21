@@ -46,8 +46,8 @@ export default function Header() {
             err instanceof Error
               ? err.message
               : typeof err === "string"
-                ? err
-                : JSON.stringify(err);
+              ? err
+              : JSON.stringify(err);
           console.error("Failed to open DevTools:", errMsg);
           message.error(`DevTools error: ${errMsg}`);
         });
