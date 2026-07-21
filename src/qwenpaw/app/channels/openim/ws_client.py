@@ -99,7 +99,69 @@ def _normalize_content_obj(content_obj: Any) -> Any:
             "duration": int(getattr(content_obj, "duration", 0) or 0),
             "soundType": str(getattr(content_obj, "sound_type", "") or ""),
         }
+    if name == "VideoElem":
+        return {
+            "videoPath": str(getattr(content_obj, "video_path", "") or ""),
+            "videoUUID": str(getattr(content_obj, "video_uuid", "") or ""),
+            "videoUrl": str(getattr(content_obj, "video_url", "") or ""),
+            "videoType": str(getattr(content_obj, "video_type", "") or ""),
+            "videoSize": int(getattr(content_obj, "video_size", 0) or 0),
+            "duration": int(getattr(content_obj, "duration", 0) or 0),
+            "snapshotPath": str(
+                getattr(content_obj, "snapshot_path", "") or "",
+            ),
+            "snapshotUrl": str(
+                getattr(content_obj, "snapshot_url", "") or "",
+            ),
+            "snapshotWidth": int(
+                getattr(content_obj, "snapshot_width", 0) or 0,
+            ),
+            "snapshotHeight": int(
+                getattr(content_obj, "snapshot_height", 0) or 0,
+            ),
+        }
+    if name == "AtTextElem":
+        at_user_list = getattr(content_obj, "at_user_list", None) or []
+        at_users_info_raw = getattr(content_obj, "at_users_info", None) or []
+        at_users_info: list[dict[str, str]] = []
+        for info in at_users_info_raw:
+            if isinstance(info, dict):
+                at_users_info.append(
+                    {
+                        "atUserID": str(
+                            info.get("atUserID") or info.get("at_user_id") or "",
+                        ),
+                        "groupNickname": str(
+                            info.get("groupNickname")
+                            or info.get("group_nickname")
+                            or "",
+                        ),
+                    },
+                )
+            else:
+                at_users_info.append(
+                    {
+                        "atUserID": str(
+                            getattr(info, "at_user_id", "") or "",
+                        ),
+                        "groupNickname": str(
+                            getattr(info, "group_nickname", "") or "",
+                        ),
+                    },
+                )
+        return {
+            "text": str(getattr(content_obj, "text", "") or ""),
+            "atUserList": [str(v) for v in at_user_list],
+            "atUsersInfo": at_users_info,
+            "isAtSelf": bool(getattr(content_obj, "is_at_self", False)),
+        }
     return None
+
+
+def _as_str_list(value: Any) -> list[str]:
+    if not isinstance(value, (list, tuple)):
+        return []
+    return [str(v) for v in value if v is not None and str(v)]
 
 
 def normalize_ws_message(msg: Any) -> Optional[dict[str, Any]]:
@@ -107,10 +169,17 @@ def normalize_ws_message(msg: Any) -> Optional[dict[str, Any]]:
     if msg is None:
         return None
 
+    group_id = ""
+    at_user_id_list: list[str] = []
+
     # 优先走 openim-sdk-core WSMessage 属性
     if not isinstance(msg, dict):
         send_id = str(getattr(msg, "send_id", None) or "")
         recv_id = str(getattr(msg, "recv_id", None) or "")
+        group_id = str(getattr(msg, "group_id", None) or "")
+        at_user_id_list = _as_str_list(
+            getattr(msg, "at_user_id_list", None),
+        )
         content = getattr(msg, "content", None)
         content_obj = getattr(msg, "content_obj", None)
         normalized_obj = _normalize_content_obj(content_obj)
@@ -130,6 +199,10 @@ def normalize_ws_message(msg: Any) -> Optional[dict[str, Any]]:
     else:
         send_id = str(msg.get("sendID") or msg.get("send_id") or "")
         recv_id = str(msg.get("recvID") or msg.get("recv_id") or "")
+        group_id = str(msg.get("groupID") or msg.get("group_id") or "")
+        at_user_id_list = _as_str_list(
+            msg.get("atUserIDList") or msg.get("at_user_id_list"),
+        )
         content = msg.get("content")
         content_type = msg.get("contentType", msg.get("content_type"))
         session_type = msg.get("sessionType", msg.get("session_type"))
@@ -152,6 +225,8 @@ def normalize_ws_message(msg: Any) -> Optional[dict[str, Any]]:
     return {
         "sendID": send_id,
         "recvID": recv_id,
+        "groupID": group_id,
+        "atUserIDList": at_user_id_list,
         "content": content,
         "contentType": content_type_i,
         "sessionType": session_type_i,
@@ -265,18 +340,38 @@ class OpenIMWSRunner:
                 logger.warning("openim ws thread did not stop within timeout")
         self._thread = None
 
-    def send_text_sync(self, recv_id: str, text: str) -> bool:
+    def send_text_sync(
+        self,
+        recv_id: str,
+        text: str,
+        *,
+        group_id: str = "",
+    ) -> bool:
         """任意线程调用 SDK send_text；成功需拿到 ack。"""
         return self._sdk_send(
             "send_text",
-            lambda sdk: sdk.send_text(text, recv_id=recv_id),
+            lambda sdk: sdk.send_text(
+                text,
+                recv_id=recv_id or "",
+                group_id=group_id or "",
+            ),
         )
 
-    def send_image_sync(self, recv_id: str, image_path: str) -> bool:
+    def send_image_sync(
+        self,
+        recv_id: str,
+        image_path: str,
+        *,
+        group_id: str = "",
+    ) -> bool:
         """本地路径发图。"""
         return self._sdk_send(
             "send_image",
-            lambda sdk: sdk.send_image(image_path, recv_id=recv_id),
+            lambda sdk: sdk.send_image(
+                image_path,
+                recv_id=recv_id or "",
+                group_id=group_id or "",
+            ),
         )
 
     def send_image_by_url_sync(
@@ -286,6 +381,7 @@ class OpenIMWSRunner:
         *,
         width: int = 0,
         height: int = 0,
+        group_id: str = "",
     ) -> bool:
         """公网 URL 发图。"""
         return self._sdk_send(
@@ -294,7 +390,8 @@ class OpenIMWSRunner:
                 source_url=source_url,
                 width=int(width or 0),
                 height=int(height or 0),
-                recv_id=recv_id,
+                recv_id=recv_id or "",
+                group_id=group_id or "",
             ),
         )
 
@@ -305,13 +402,15 @@ class OpenIMWSRunner:
         *,
         file_name: str = "",
         file_type: str = "",
+        group_id: str = "",
     ) -> bool:
         """本地路径发文件。"""
         return self._sdk_send(
             "send_file",
             lambda sdk: sdk.send_file(
                 file_path,
-                recv_id=recv_id,
+                recv_id=recv_id or "",
+                group_id=group_id or "",
                 file_name=file_name or "",
                 file_type=file_type or "",
             ),
@@ -324,6 +423,7 @@ class OpenIMWSRunner:
         *,
         file_name: str = "",
         file_type: str = "",
+        group_id: str = "",
     ) -> bool:
         """公网 URL 发文件。"""
         return self._sdk_send(
@@ -331,8 +431,97 @@ class OpenIMWSRunner:
             lambda sdk: sdk.send_file_by_url(
                 source_url=source_url,
                 file_name=file_name or "file",
-                recv_id=recv_id,
+                recv_id=recv_id or "",
+                group_id=group_id or "",
                 file_type=file_type or "",
+            ),
+        )
+
+    def send_sound_sync(
+        self,
+        recv_id: str,
+        sound_path: str,
+        *,
+        duration: int,
+        sound_type: str = "",
+        group_id: str = "",
+    ) -> bool:
+        """本地路径发语音（duration 必填，单位秒）。"""
+        return self._sdk_send(
+            "send_sound",
+            lambda sdk: sdk.send_sound(
+                sound_path,
+                duration=int(duration),
+                recv_id=recv_id or "",
+                group_id=group_id or "",
+                sound_type=sound_type or "",
+            ),
+        )
+
+    def send_sound_by_url_sync(
+        self,
+        recv_id: str,
+        source_url: str,
+        *,
+        duration: int,
+        sound_type: str = "",
+        group_id: str = "",
+    ) -> bool:
+        """公网 URL 发语音。"""
+        return self._sdk_send(
+            "send_sound_by_url",
+            lambda sdk: sdk.send_sound_by_url(
+                source_url=source_url,
+                duration=int(duration),
+                recv_id=recv_id or "",
+                group_id=group_id or "",
+                sound_type=sound_type or "",
+            ),
+        )
+
+    def send_video_sync(
+        self,
+        recv_id: str,
+        video_path: str,
+        *,
+        duration: int,
+        video_type: str = "",
+        snapshot_path: str = "",
+        group_id: str = "",
+    ) -> bool:
+        """本地路径发视频（duration 必填）。"""
+        return self._sdk_send(
+            "send_video",
+            lambda sdk: sdk.send_video(
+                video_path,
+                duration=int(duration),
+                recv_id=recv_id or "",
+                group_id=group_id or "",
+                video_type=video_type or "",
+                snapshot_path=snapshot_path or "",
+            ),
+        )
+
+    def send_video_by_url_sync(
+        self,
+        recv_id: str,
+        video_url: str,
+        *,
+        duration: int,
+        video_type: str = "",
+        snapshot_url: str = "",
+        group_id: str = "",
+    ) -> bool:
+        """公网 URL 发视频。"""
+        return self._sdk_send(
+            "send_video_by_url",
+            lambda sdk: sdk.send_video_by_url(
+                video_url=video_url,
+                duration=int(duration),
+                recv_id=recv_id or "",
+                group_id=group_id or "",
+                video_type=video_type or "",
+                snapshot_url=snapshot_url or "",
             ),
         )
 

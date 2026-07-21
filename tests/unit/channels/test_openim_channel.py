@@ -11,9 +11,11 @@ from qwenpaw.schemas import ContentType
 
 from qwenpaw.app.channels.openim.channel import (
     OpenIMChannel,
+    detect_bot_mentioned,
     parse_file_meta,
     parse_picture_meta,
     parse_text_content,
+    parse_video_meta,
     should_handle_inbound,
 )
 from qwenpaw.app.channels.openim.client import (
@@ -22,10 +24,12 @@ from qwenpaw.app.channels.openim.client import (
     ws_gateway_addr,
 )
 from qwenpaw.app.channels.openim.constants import (
+    CONTENT_TYPE_AT_TEXT,
     CONTENT_TYPE_FILE,
     CONTENT_TYPE_PICTURE,
     CONTENT_TYPE_SOUND,
     CONTENT_TYPE_TEXT,
+    CONTENT_TYPE_VIDEO,
 )
 from qwenpaw.app.channels.openim.ws_client import normalize_ws_message
 from qwenpaw.exceptions import ChannelError
@@ -102,6 +106,20 @@ class TestParseMediaMeta:
         assert name == "a.pdf"
         assert size == 12
 
+    def test_video_meta(self):
+        url, duration, snap, vtype = parse_video_meta(
+            {
+                "videoUrl": "https://cdn.example/a.mp4",
+                "duration": 8,
+                "snapshotUrl": "https://cdn.example/a.jpg",
+                "videoType": "video/mp4",
+            },
+        )
+        assert url.endswith("a.mp4")
+        assert duration == 8
+        assert snap.endswith("a.jpg")
+        assert vtype == "video/mp4"
+
 
 class TestShouldHandleInbound:
     def test_accept_dm_text(self):
@@ -149,6 +167,50 @@ class TestShouldHandleInbound:
         }
         assert should_handle_inbound(body, app_id="drclaw_bot")
 
+    def test_accept_video(self):
+        body = {
+            "sendID": "user1",
+            "recvID": "drclaw_bot",
+            "sessionType": 1,
+            "contentType": CONTENT_TYPE_VIDEO,
+            "content": {"videoUrl": "https://cdn.example/a.mp4"},
+        }
+        assert should_handle_inbound(body, app_id="drclaw_bot")
+
+    def test_accept_group_text(self):
+        body = {
+            "sendID": "user1",
+            "recvID": "",
+            "groupID": "g1",
+            "sessionType": 2,
+            "contentType": CONTENT_TYPE_TEXT,
+            "content": {"content": "群消息"},
+        }
+        assert should_handle_inbound(body, app_id="drclaw_bot")
+
+    def test_accept_at_text(self):
+        body = {
+            "sendID": "user1",
+            "groupID": "g1",
+            "sessionType": 2,
+            "contentType": CONTENT_TYPE_AT_TEXT,
+            "content": {
+                "text": "@助手 帮忙",
+                "atUserList": ["drclaw_bot"],
+            },
+            "atUserIDList": ["drclaw_bot"],
+        }
+        assert should_handle_inbound(body, app_id="drclaw_bot")
+
+    def test_reject_group_without_id(self):
+        body = {
+            "sendID": "user1",
+            "sessionType": 2,
+            "contentType": CONTENT_TYPE_TEXT,
+            "content": {"content": "x"},
+        }
+        assert not should_handle_inbound(body, app_id="drclaw_bot")
+
     def test_reject_picture_without_url(self):
         body = {
             "sendID": "user1",
@@ -178,6 +240,28 @@ class TestShouldHandleInbound:
             "content": "x",
         }
         assert not should_handle_inbound(body, app_id="drclaw_bot")
+
+
+class TestDetectBotMentioned:
+    def test_at_user_list(self):
+        body = {
+            "atUserIDList": ["drclaw_bot"],
+            "content": {},
+        }
+        assert detect_bot_mentioned(body, app_id="drclaw_bot")
+
+    def test_at_all(self):
+        body = {
+            "content": {"atUserList": ["AtAllTag"], "text": "@所有人"},
+        }
+        assert detect_bot_mentioned(body, app_id="drclaw_bot")
+
+    def test_not_mentioned(self):
+        body = {
+            "atUserIDList": ["other"],
+            "content": {"text": "hi"},
+        }
+        assert not detect_bot_mentioned(body, app_id="drclaw_bot")
 
 
 class TestNormalizeWsMessage:
@@ -233,6 +317,87 @@ class TestEnqueue:
             },
         )
         assert captured[0]["text"] == "ping"
+
+    def test_ws_inbound_group_with_mention(self):
+        ch = _make_channel(require_mention=True)
+        captured: list[Any] = []
+        ch.set_enqueue(captured.append)
+        assert ch.enqueue_inbound(
+            {
+                "sendID": "user1",
+                "groupID": "g1",
+                "sessionType": 2,
+                "contentType": CONTENT_TYPE_AT_TEXT,
+                "content": {
+                    "text": "@助手 hi",
+                    "atUserList": ["drclaw_bot"],
+                    "atUsersInfo": [
+                        {
+                            "atUserID": "drclaw_bot",
+                            "groupNickname": "助手",
+                        },
+                    ],
+                },
+                "atUserIDList": ["drclaw_bot"],
+                "serverMsgID": "mg1",
+            },
+        )
+        assert captured[0]["meta"]["is_group"] is True
+        assert captured[0]["meta"]["bot_mentioned"] is True
+        assert captured[0]["session_id"] == "openim:group:g1:user1"
+        assert "助手" not in captured[0]["text"]
+
+    def test_ws_inbound_group_shared_session(self):
+        ch = _make_channel(require_mention=False, share_session_in_group=True)
+        captured: list[Any] = []
+        ch.set_enqueue(captured.append)
+        assert ch.enqueue_inbound(
+            {
+                "sendID": "user1",
+                "groupID": "g1",
+                "sessionType": 2,
+                "contentType": CONTENT_TYPE_TEXT,
+                "content": {"content": "群共享"},
+                "serverMsgID": "mg-share",
+            },
+        )
+        assert captured[0]["session_id"] == "openim:group:g1"
+
+    def test_ws_inbound_group_require_mention_drop(self):
+        ch = _make_channel(require_mention=True)
+        captured: list[Any] = []
+        ch.set_enqueue(captured.append)
+        assert not ch.enqueue_inbound(
+            {
+                "sendID": "user1",
+                "groupID": "g1",
+                "sessionType": 2,
+                "contentType": CONTENT_TYPE_TEXT,
+                "content": {"content": "无人@"},
+                "serverMsgID": "mg2",
+            },
+        )
+        assert not captured
+
+    def test_ws_inbound_video(self):
+        ch = _make_channel()
+        captured: list[Any] = []
+        ch.set_enqueue(captured.append)
+        assert ch.enqueue_inbound(
+            {
+                "sendID": "user1",
+                "recvID": "drclaw_bot",
+                "sessionType": 1,
+                "contentType": CONTENT_TYPE_VIDEO,
+                "content": {
+                    "videoUrl": "https://cdn.example/v.mp4",
+                    "duration": 12,
+                },
+                "serverMsgID": "mv1",
+            },
+        )
+        assert captured[0]["content_parts"][0].type == ContentType.VIDEO
+        assert captured[0]["meta"]["duration"] == 12
 
     def test_ws_inbound_picture(self):
         ch = _make_channel()
@@ -316,7 +481,30 @@ async def test_send_via_ws_only():
     runner.send_text_sync.return_value = True
     ch._ws_runner = runner
     await ch.send("user1", "hello")
-    runner.send_text_sync.assert_called_once_with("user1", "[BOT]hello")
+    runner.send_text_sync.assert_called_once_with(
+        "user1",
+        "[BOT]hello",
+        group_id="",
+    )
+
+
+@pytest.mark.asyncio
+async def test_send_group_text():
+    ch = _make_channel()
+    runner = MagicMock()
+    runner.is_connected = True
+    runner.send_text_sync.return_value = True
+    ch._ws_runner = runner
+    await ch.send(
+        "openim:group:g1",
+        "hello",
+        meta={"is_group": True, "group_id": "g1"},
+    )
+    runner.send_text_sync.assert_called_once_with(
+        "",
+        "hello",
+        group_id="g1",
+    )
 
 
 @pytest.mark.asyncio
@@ -350,6 +538,41 @@ async def test_send_media_file():
 
 
 @pytest.mark.asyncio
+async def test_send_media_audio_sound():
+    ch = _make_channel()
+    runner = MagicMock()
+    runner.is_connected = True
+    runner.send_sound_by_url_sync.return_value = True
+    ch._ws_runner = runner
+    part = MagicMock()
+    part.type = ContentType.AUDIO
+    part.data = "https://cdn.example/a.ogg"
+    part.format = "ogg"
+    part.duration = None
+    await ch.send_media("user1", part, meta={"duration": 3})
+    runner.send_sound_by_url_sync.assert_called_once()
+    kwargs = runner.send_sound_by_url_sync.call_args.kwargs
+    assert kwargs["duration"] == 3
+
+
+@pytest.mark.asyncio
+async def test_send_media_video():
+    ch = _make_channel()
+    runner = MagicMock()
+    runner.is_connected = True
+    runner.send_video_by_url_sync.return_value = True
+    ch._ws_runner = runner
+    part = MagicMock()
+    part.type = ContentType.VIDEO
+    part.video_url = "https://cdn.example/a.mp4"
+    part.duration = None
+    await ch.send_media("user1", part)
+    runner.send_video_by_url_sync.assert_called_once()
+    kwargs = runner.send_video_by_url_sync.call_args.kwargs
+    assert kwargs["duration"] == 1
+
+
+@pytest.mark.asyncio
 async def test_send_content_parts_splits_text_and_media():
     ch = _make_channel()
     runner = MagicMock()
@@ -364,7 +587,11 @@ async def test_send_content_parts_splits_text_and_media():
     image.type = ContentType.IMAGE
     image.image_url = "https://cdn.example/a.png"
     await ch.send_content_parts("user1", [text, image])
-    runner.send_text_sync.assert_called_once_with("user1", "see image")
+    runner.send_text_sync.assert_called_once_with(
+        "user1",
+        "see image",
+        group_id="",
+    )
     runner.send_image_by_url_sync.assert_called_once()
 
 

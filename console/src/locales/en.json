@@ -1406,7 +1406,7 @@
     "enableAction": "Enable",
     "noEnabledChannels": "No enabled channels",
     "goEnableChannels": "Enable channels",
-    "openimGuide": "The OpenIM channel receives messages via WebSocket long connection (no public IP or webhook). Create a robot user on the server, put its userID in App ID, put share.yaml secret in App Secret, and set API URL."
+    "openimGuide": "OpenIM uses a WebSocket long connection (no public IP or webhook). After creating a robot user, set API URL, App ID, and App Secret. Supports DM and group chats (text / image / audio / video / file). For groups, enable Require @Mention and Share Context in Group as needed."
   },
   "sessions": {
     "title": "Sessions",

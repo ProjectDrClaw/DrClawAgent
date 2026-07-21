@@ -1263,7 +1263,7 @@
     "enableAction": "启用",
     "noEnabledChannels": "暂无已激活频道",
     "goEnableChannels": "去启用频道",
-    "openimGuide": "OpenIM 频道通过 WebSocket 长连接接收消息，无需公网 IP 或 Webhook。在服务端创建机器人账号后，将 userID 填入 App ID，将 share.yaml 的 secret 填入 App Secret，并填写 API URL。"
+    "openimGuide": "OpenIM 通过 WebSocket 长连接收发消息，无需公网 IP 或 Webhook。创建机器人账号后填写 API URL、App ID、App Secret。支持单聊与群聊（文本 / 图片 / 语音 / 视频 / 文件）；群聊可开启「需要 @提及」与「群聊共享上下文」。"
   },
   "sessions": {
     "title": "会话",

@@ -9,18 +9,34 @@ CONTENT_TYPE_PICTURE = 102
 CONTENT_TYPE_SOUND = 103
 CONTENT_TYPE_VIDEO = 104
 CONTENT_TYPE_FILE = 105
+CONTENT_TYPE_AT_TEXT = 106
 
-# M1：单聊文本 + 图片 + 文件 + 语音（入站）
+# 入站：单聊/群聊文本、@文本、图片、语音、视频、文件
 INBOUND_CONTENT_TYPES = frozenset(
     {
         CONTENT_TYPE_TEXT,
         CONTENT_TYPE_PICTURE,
         CONTENT_TYPE_SOUND,
+        CONTENT_TYPE_VIDEO,
         CONTENT_TYPE_FILE,
+        CONTENT_TYPE_AT_TEXT,
     },
 )
 
 SESSION_TYPE_DM = 1
+SESSION_TYPE_GROUP = 2
+SESSION_TYPE_SUPER_GROUP = 3
+
+INBOUND_SESSION_TYPES = frozenset(
+    {
+        SESSION_TYPE_DM,
+        SESSION_TYPE_GROUP,
+        SESSION_TYPE_SUPER_GROUP,
+    },
+)
+
+# OpenIM @全体成员约定标记
+AT_ALL_TAG = "AtAllTag"
 
 # admin / user token 提前刷新缓冲（秒）
 TOKEN_REFRESH_SKEW_S = 300
@@ -37,3 +53,6 @@ WS_START_CONNECT_TIMEOUT_S = 30.0
 
 # 入站消息去重窗口
 PROCESSED_MSG_IDS_MAX = 2000
+
+# 出站语音/视频缺省时长（秒）；SDK 要求 duration > 0
+DEFAULT_MEDIA_DURATION_S = 1

@@ -1344,14 +1344,22 @@ export function ChannelDrawer({
               label="App ID"
               rules={[{ required: true }]}
             >
-              <Input placeholder="App ID" />
+              <Input placeholder="cli_00000001720a5abb" />
             </Form.Item>
             <Form.Item
               name="app_secret"
               label="App Secret"
               rules={[{ required: true }]}
             >
-              <Input.Password placeholder="App Secret" />
+              <Input.Password placeholder="aBgAsaMLwy7yBveJUPnLheulHwuoBzWL" />
+            </Form.Item>
+            <Form.Item
+              name="share_session_in_group"
+              label={t("channels.shareSessionInGroup")}
+              valuePropName="checked"
+              tooltip={t("channels.shareSessionInGroupTooltip")}
+            >
+              <Switch />
             </Form.Item>
           </>
         );

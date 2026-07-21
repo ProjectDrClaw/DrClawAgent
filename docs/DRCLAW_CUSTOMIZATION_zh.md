@@ -71,10 +71,11 @@
 
 - 内置频道键：`openim`（出站 WebSocket）
 - Console 配置：`api_url` / `app_id` / `app_secret`
-- 对接 `DrClawApp` 机器人单聊（文本 / 图片 / 文件）
+- 对接 `DrClawApp`：单聊 / 群聊（`require_mention`、`share_session_in_group`）
+- 消息类型：文本、@文本、图片、语音、视频、文件
 - 运维细节见 [DRCLAW_OPENIM_CHANNEL_zh.md](./DRCLAW_OPENIM_CHANNEL_zh.md)
 
-**不做**：流式打字机、视频消息、群聊 `@`、自动开机器人账号、App 直连 Console SSE 作主对话。
+**不做**：流式打字机、交互卡片、自动开机器人账号、App 直连 Console SSE 作主对话。
 
 ---
 
@@ -167,7 +168,7 @@
 |----|------|
 | 多用户 | 无 users / role / 用户管理页 / 按角色过滤 Agent 或会话 |
 | 公网社区发布 | 无官网自动发布、无公开插件 CDN 流水线 |
-| OpenIM 扩展 | 见第 4 节「不做」 |
+| OpenIM 扩展 | 流式打字机、交互卡片等（见第 4 节「不做」） |
 | 应用市场默认入口 | 侧栏「应用 / 插件管理」临时隐藏 |
 
 ---

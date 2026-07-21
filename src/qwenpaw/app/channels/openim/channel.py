@@ -17,6 +17,7 @@ from qwenpaw.schemas import (
     FileContent,
     ImageContent,
     TextContent,
+    VideoContent,
 )
 
 from ....config.config import OpenIMConfig as OpenIMChannelConfig
@@ -31,15 +32,23 @@ from ..base import (
 from ..utils import file_url_to_local_path
 from .client import OpenIMClient, derive_ws_url
 from .constants import (
+    AT_ALL_TAG,
+    CONTENT_TYPE_AT_TEXT,
     CONTENT_TYPE_FILE,
     CONTENT_TYPE_PICTURE,
     CONTENT_TYPE_SOUND,
     CONTENT_TYPE_TEXT,
+    CONTENT_TYPE_VIDEO,
+    DEFAULT_MEDIA_DURATION_S,
     INBOUND_CONTENT_TYPES,
+    INBOUND_SESSION_TYPES,
     PROCESSED_MSG_IDS_MAX,
     SESSION_TYPE_DM,
+    SESSION_TYPE_GROUP,
+    SESSION_TYPE_SUPER_GROUP,
     WS_START_CONNECT_TIMEOUT_S,
 )
+from .credentials import resolve_app_secret, resolve_identity
 from .ws_client import OpenIMWSRunner, openim_sdk_available
 
 if TYPE_CHECKING:
@@ -136,27 +145,111 @@ def parse_sound_meta(content: Any) -> Tuple[str, int, str]:
     return url, duration, sound_type
 
 
+def parse_video_meta(content: Any) -> Tuple[str, int, str, str]:
+    """解析视频 URL / 时长 / 封面 / 类型。"""
+    obj = _as_content_dict(content)
+    url = str(obj.get("videoUrl") or obj.get("video_url") or "").strip()
+    duration = int(obj.get("duration") or 0)
+    snapshot = str(
+        obj.get("snapshotUrl") or obj.get("snapshot_url") or "",
+    ).strip()
+    video_type = str(
+        obj.get("videoType") or obj.get("video_type") or "",
+    ).strip()
+    return url, duration, snapshot, video_type
+
+
+def parse_at_text_content(content: Any) -> str:
+    """解析 @文本消息正文。"""
+    obj = _as_content_dict(content)
+    if obj:
+        text = obj.get("text")
+        if text is not None:
+            return str(text)
+        if "content" in obj:
+            return str(obj.get("content") or "")
+    if isinstance(content, str):
+        return content
+    return ""
+
+
+def _at_user_ids_from_content(content: Any) -> List[str]:
+    obj = _as_content_dict(content)
+    raw = obj.get("atUserList") or obj.get("at_user_list") or []
+    if not isinstance(raw, list):
+        return []
+    return [str(v) for v in raw if v is not None and str(v)]
+
+
+def detect_bot_mentioned(body: Dict[str, Any], *, app_id: str) -> bool:
+    """判断消息是否 @ 了机器人（含 @全体）。"""
+    if not app_id:
+        return False
+    at_list = [
+        str(v)
+        for v in (body.get("atUserIDList") or body.get("at_user_id_list") or [])
+        if v is not None
+    ]
+    at_list.extend(_at_user_ids_from_content(body.get("content")))
+    normalized = {x for x in at_list if x}
+    if app_id in normalized or AT_ALL_TAG in normalized:
+        return True
+    obj = _as_content_dict(body.get("content"))
+    if obj.get("isAtSelf") or obj.get("is_at_self"):
+        return True
+    return False
+
+
+def strip_bot_at_text(text: str, content: Any, *, app_id: str) -> str:
+    """去掉正文中对机器人的 @ 昵称占位。"""
+    if not text:
+        return ""
+    result = text
+    obj = _as_content_dict(content)
+    infos = obj.get("atUsersInfo") or obj.get("at_users_info") or []
+    if isinstance(infos, list):
+        for info in infos:
+            if not isinstance(info, dict):
+                continue
+            uid = str(info.get("atUserID") or info.get("at_user_id") or "")
+            nick = str(
+                info.get("groupNickname") or info.get("group_nickname") or "",
+            ).strip()
+            if uid == app_id and nick:
+                result = result.replace(f"@{nick}", "")
+    return result.strip()
+
+
+def is_group_session(session_type: int) -> bool:
+    return session_type in (SESSION_TYPE_GROUP, SESSION_TYPE_SUPER_GROUP)
+
+
 def should_handle_inbound(
     body: Dict[str, Any],
     *,
     app_id: str,
 ) -> bool:
-    """仅处理对端发给机器人的单聊文本/图片/文件/语音（过滤自回环）。"""
+    """处理对端发给机器人的单聊/群聊文本、@文本、图片、语音、视频、文件。"""
     if not app_id:
         return False
     send_id = str(body.get("sendID") or "")
     recv_id = str(body.get("recvID") or "")
+    group_id = str(body.get("groupID") or body.get("group_id") or "")
     if not send_id or send_id == app_id:
-        return False
-    # WS 推送时 recv 可能为空或为机器人
-    if recv_id and recv_id != app_id:
         return False
     try:
         session_type = int(body.get("sessionType") or SESSION_TYPE_DM)
     except (TypeError, ValueError):
         return False
-    if session_type != SESSION_TYPE_DM:
+    if session_type not in INBOUND_SESSION_TYPES:
         return False
+    if is_group_session(session_type):
+        if not group_id:
+            return False
+    else:
+        # 单聊：recv 为空或为机器人
+        if recv_id and recv_id != app_id:
+            return False
     try:
         content_type = int(body.get("contentType") or 0)
     except (TypeError, ValueError):
@@ -164,24 +257,40 @@ def should_handle_inbound(
     if content_type not in INBOUND_CONTENT_TYPES:
         return False
     content = body.get("content")
-    if content_type == CONTENT_TYPE_TEXT:
-        return bool(parse_text_content(content).strip())
+    if content_type in (CONTENT_TYPE_TEXT, CONTENT_TYPE_AT_TEXT):
+        text = (
+            parse_at_text_content(content)
+            if content_type == CONTENT_TYPE_AT_TEXT
+            else parse_text_content(content)
+        )
+        return bool(text.strip()) or content_type == CONTENT_TYPE_AT_TEXT
     if content_type == CONTENT_TYPE_PICTURE:
         return bool(parse_picture_meta(content)[0])
     if content_type == CONTENT_TYPE_FILE:
         return bool(parse_file_meta(content)[0])
     if content_type == CONTENT_TYPE_SOUND:
         return bool(parse_sound_meta(content)[0])
+    if content_type == CONTENT_TYPE_VIDEO:
+        return bool(parse_video_meta(content)[0])
     return False
 
 
 def build_inbound_parts(
     content_type: int,
     content: Any,
+    *,
+    app_id: str = "",
 ) -> Tuple[str, List[Any]]:
     """按 contentType 构造 text + content_parts。"""
     if content_type == CONTENT_TYPE_TEXT:
         text = parse_text_content(content)
+        return text, [TextContent(type=ContentType.TEXT, text=text)]
+    if content_type == CONTENT_TYPE_AT_TEXT:
+        text = parse_at_text_content(content)
+        if app_id:
+            text = strip_bot_at_text(text, content, app_id=app_id)
+        if not text.strip():
+            text = " "
         return text, [TextContent(type=ContentType.TEXT, text=text)]
     if content_type == CONTENT_TYPE_PICTURE:
         url, _, _ = parse_picture_meta(content)
@@ -202,6 +311,11 @@ def build_inbound_parts(
         fmt = sound_type or "audio"
         return "", [
             AudioContent(type=ContentType.AUDIO, data=url, format=fmt),
+        ]
+    if content_type == CONTENT_TYPE_VIDEO:
+        url, _, _, _ = parse_video_meta(content)
+        return "", [
+            VideoContent(type=ContentType.VIDEO, video_url=url),
         ]
     return "", []
 
@@ -237,6 +351,7 @@ class OpenIMChannel(BaseChannel):
         require_mention: bool = False,
         access_control_dm: bool = False,
         access_control_group: bool = False,
+        share_session_in_group: bool = False,
     ):
         super().__init__(
             process,
@@ -256,12 +371,22 @@ class OpenIMChannel(BaseChannel):
         )
         self.enabled = enabled
         self.api_url = (api_url or "").rstrip("/")
-        self.app_id = app_id or ""
-        self.app_secret = app_secret or ""
+        # 配置可填数字 userID 或编码后的 App ID；SDK 登录用 OpenIM userID
+        raw_id = (app_id or "").strip()
+        if raw_id:
+            self.app_id, self.encoded_app_id = resolve_identity(raw_id)
+        else:
+            self.app_id = ""
+            self.encoded_app_id = ""
+        self.app_secret = resolve_app_secret(
+            self.encoded_app_id or self.app_id,
+            app_secret or "",
+        )
         self.bot_prefix = bot_prefix or ""
         self.ws_url = derive_ws_url(self.api_url, ws_url or "")
         self.admin_user_id = admin_user_id or "imAdmin"
         self.platform_id = int(platform_id or 7)
+        self.share_session_in_group = bool(share_session_in_group)
         self._workspace_dir = (
             Path(workspace_dir).expanduser() if workspace_dir else None
         )
@@ -303,6 +428,9 @@ class OpenIMChannel(BaseChannel):
             allow_from=allow_from,
             deny_message=os.getenv("OPENIM_DENY_MESSAGE", ""),
             require_mention=os.getenv("OPENIM_REQUIRE_MENTION", "0") == "1",
+            share_session_in_group=(
+                os.getenv("OPENIM_SHARE_SESSION_IN_GROUP", "0") == "1"
+            ),
         )
 
     @classmethod
@@ -344,6 +472,9 @@ class OpenIMChannel(BaseChannel):
             access_control_group=bool(
                 getattr(config, "access_control_group", False),
             ),
+            share_session_in_group=bool(
+                getattr(config, "share_session_in_group", False),
+            ),
         )
 
     def resolve_session_id(
@@ -351,7 +482,23 @@ class OpenIMChannel(BaseChannel):
         sender_id: str,
         channel_meta: Optional[Dict[str, Any]] = None,
     ) -> str:
+        meta = channel_meta or {}
+        if meta.get("is_group"):
+            group_id = str(meta.get("group_id") or "")
+            if self.share_session_in_group:
+                return f"openim:group:{group_id}"
+            return f"openim:group:{group_id}:{sender_id}"
         return f"openim:dm:{sender_id}"
+
+    def get_to_handle_from_request(self, request: "AgentRequest") -> str:
+        meta = getattr(request, "channel_meta", None) or {}
+        if meta.get("is_group"):
+            return f"openim:group:{meta.get('group_id', '')}"
+        return str(
+            meta.get("sender_id")
+            or getattr(request, "user_id", "")
+            or "",
+        )
 
     def build_agent_request_from_native(
         self,
@@ -429,24 +576,47 @@ class OpenIMChannel(BaseChannel):
         send_id = str(body.get("sendID") or "")
         try:
             content_type = int(body.get("contentType") or 0)
+            session_type = int(body.get("sessionType") or SESSION_TYPE_DM)
         except (TypeError, ValueError):
             return False
-        text, content_parts = build_inbound_parts(
-            content_type,
-            body.get("content"),
-        )
-        if not content_parts:
-            return False
+        group_id = str(body.get("groupID") or body.get("group_id") or "")
+        is_group = is_group_session(session_type)
+        bot_mentioned = detect_bot_mentioned(body, app_id=self.app_id)
         meta = {
             "recv_id": str(body.get("recvID") or self.app_id),
-            "session_type": int(
-                body.get("sessionType") or SESSION_TYPE_DM,
-            ),
+            "session_type": session_type,
             "content_type": content_type,
             "server_msg_id": body.get("serverMsgID"),
             "client_msg_id": body.get("clientMsgID"),
             "sender_nickname": body.get("senderNickname"),
+            "sender_id": send_id,
+            "is_group": is_group,
+            "group_id": group_id if is_group else "",
+            "bot_mentioned": bot_mentioned,
         }
+        if content_type == CONTENT_TYPE_SOUND:
+            _, duration, _ = parse_sound_meta(body.get("content"))
+            if duration > 0:
+                meta["duration"] = duration
+        elif content_type == CONTENT_TYPE_VIDEO:
+            _, duration, snapshot, _ = parse_video_meta(body.get("content"))
+            if duration > 0:
+                meta["duration"] = duration
+            if snapshot:
+                meta["snapshot_url"] = snapshot
+        if not self._check_group_mention(is_group, meta):
+            logger.debug(
+                "openim skip group message without mention group=%s",
+                group_id,
+            )
+            return False
+        text, content_parts = build_inbound_parts(
+            content_type,
+            body.get("content"),
+            app_id=self.app_id,
+        )
+        if not content_parts:
+            return False
         native = {
             "channel_id": self.channel,
             "sender_id": send_id,
@@ -539,6 +709,58 @@ class OpenIMChannel(BaseChannel):
             recv_id = to_handle.split(":")[-1]
         return recv_id
 
+    def _resolve_send_target(
+        self,
+        to_handle: str,
+        meta: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[str, str]:
+        """返回 (recv_id, group_id)；群聊只填 group_id。"""
+        meta = meta or {}
+        handle = to_handle or ""
+        if (
+            meta.get("is_group")
+            or handle.startswith("openim:group:")
+            or handle.startswith("group:")
+        ):
+            group_id = str(
+                meta.get("group_id")
+                or handle.removeprefix("openim:group:")
+                or handle.removeprefix("group:")
+                or "",
+            )
+            return "", group_id
+        recv_id = self._resolve_recv_id(handle)
+        if not recv_id:
+            recv_id = str(meta.get("sender_id") or "")
+        return recv_id, ""
+
+    @staticmethod
+    def _media_duration(
+        meta: Optional[Dict[str, Any]],
+        part: Any = None,
+    ) -> int:
+        """解析出站媒体时长；缺省用 DEFAULT_MEDIA_DURATION_S。"""
+        candidates = []
+        if meta:
+            for key in (
+                "duration",
+                "media_duration",
+                "video_duration",
+                "sound_duration",
+            ):
+                if meta.get(key) is not None:
+                    candidates.append(meta.get(key))
+        if part is not None:
+            candidates.append(getattr(part, "duration", None))
+        for raw in candidates:
+            try:
+                value = int(raw)
+            except (TypeError, ValueError):
+                continue
+            if value > 0:
+                return value
+        return DEFAULT_MEDIA_DURATION_S
+
     def _require_runner(self) -> OpenIMWSRunner:
         runner = self._ws_runner
         if runner is None or not runner.is_connected:
@@ -556,17 +778,30 @@ class OpenIMChannel(BaseChannel):
     ) -> None:
         if not self.enabled:
             return
-        recv_id = self._resolve_recv_id(to_handle)
+        recv_id, group_id = self._resolve_send_target(to_handle, meta)
         body = f"{self.bot_prefix}{text}" if self.bot_prefix else text
         if not body.strip():
             return
+        if not recv_id and not group_id:
+            raise ChannelError(
+                channel_name="openim",
+                message="openim send target missing recv_id/group_id",
+            )
 
         runner = self._require_runner()
-        ok = await asyncio.to_thread(runner.send_text_sync, recv_id, body)
+        ok = await asyncio.to_thread(
+            runner.send_text_sync,
+            recv_id,
+            body,
+            group_id=group_id,
+        )
         if not ok:
             raise ChannelError(
                 channel_name="openim",
-                message=f"openim WebSocket send_text failed recv={recv_id}",
+                message=(
+                    "openim WebSocket send_text failed "
+                    f"recv={recv_id} group={group_id}"
+                ),
             )
 
     async def send_content_parts(
@@ -609,12 +844,18 @@ class OpenIMChannel(BaseChannel):
         part: OutgoingContentPart,
         meta: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """通过 WS SDK 发送图片 / 文件（语音无时长时按文件发送）。"""
+        """通过 WS SDK 发送图片 / 文件 / 语音 / 视频。"""
         if not self.enabled:
             return
-        recv_id = self._resolve_recv_id(to_handle)
+        recv_id, group_id = self._resolve_send_target(to_handle, meta)
+        if not recv_id and not group_id:
+            raise ChannelError(
+                channel_name="openim",
+                message="openim send_media target missing recv_id/group_id",
+            )
         runner = self._require_runner()
         part_type = getattr(part, "type", None)
+        duration = self._media_duration(meta, part)
 
         if part_type == ContentType.IMAGE:
             url = str(getattr(part, "image_url", "") or "").strip()
@@ -626,17 +867,22 @@ class OpenIMChannel(BaseChannel):
                     runner.send_image_sync,
                     recv_id,
                     local,
+                    group_id=group_id,
                 )
             else:
                 ok = await asyncio.to_thread(
                     runner.send_image_by_url_sync,
                     recv_id,
                     url,
+                    group_id=group_id,
                 )
             if not ok:
                 raise ChannelError(
                     channel_name="openim",
-                    message=f"openim send_image failed recv={recv_id}",
+                    message=(
+                        f"openim send_image failed "
+                        f"recv={recv_id} group={group_id}"
+                    ),
                 )
             return
 
@@ -656,6 +902,7 @@ class OpenIMChannel(BaseChannel):
                     recv_id,
                     local,
                     file_name=name,
+                    group_id=group_id,
                 )
             else:
                 ok = await asyncio.to_thread(
@@ -663,40 +910,84 @@ class OpenIMChannel(BaseChannel):
                     recv_id,
                     url,
                     file_name=name,
-                )
-            if not ok:
-                raise ChannelError(
-                    channel_name="openim",
-                    message=f"openim send_file failed recv={recv_id}",
-                )
-            return
-
-        if part_type == ContentType.AUDIO:
-            # SDK send_sound 需要 duration；无可靠时长时退化为文件发送
-            url = str(getattr(part, "data", "") or "").strip()
-            if not url:
-                return
-            name = f"audio.{getattr(part, 'format', None) or 'bin'}"
-            local = file_url_to_local_path(url) or ""
-            if local and Path(local).is_file():
-                ok = await asyncio.to_thread(
-                    runner.send_file_sync,
-                    recv_id,
-                    local,
-                    file_name=name,
-                )
-            else:
-                ok = await asyncio.to_thread(
-                    runner.send_file_by_url_sync,
-                    recv_id,
-                    url,
-                    file_name=name,
+                    group_id=group_id,
                 )
             if not ok:
                 raise ChannelError(
                     channel_name="openim",
                     message=(
-                        f"openim send_audio(as file) failed recv={recv_id}"
+                        f"openim send_file failed "
+                        f"recv={recv_id} group={group_id}"
+                    ),
+                )
+            return
+
+        if part_type == ContentType.AUDIO:
+            url = str(getattr(part, "data", "") or "").strip()
+            if not url:
+                return
+            sound_type = str(getattr(part, "format", "") or "")
+            local = file_url_to_local_path(url) or ""
+            if local and Path(local).is_file():
+                ok = await asyncio.to_thread(
+                    runner.send_sound_sync,
+                    recv_id,
+                    local,
+                    duration=duration,
+                    sound_type=sound_type,
+                    group_id=group_id,
+                )
+            else:
+                ok = await asyncio.to_thread(
+                    runner.send_sound_by_url_sync,
+                    recv_id,
+                    url,
+                    duration=duration,
+                    sound_type=sound_type,
+                    group_id=group_id,
+                )
+            if not ok:
+                raise ChannelError(
+                    channel_name="openim",
+                    message=(
+                        f"openim send_sound failed "
+                        f"recv={recv_id} group={group_id}"
+                    ),
+                )
+            return
+
+        if part_type == ContentType.VIDEO:
+            url = str(getattr(part, "video_url", "") or "").strip()
+            if not url:
+                return
+            snapshot = str((meta or {}).get("snapshot_url") or "")
+            local = file_url_to_local_path(url) or ""
+            if local and Path(local).is_file():
+                ok = await asyncio.to_thread(
+                    runner.send_video_sync,
+                    recv_id,
+                    local,
+                    duration=duration,
+                    snapshot_path=snapshot
+                    if snapshot and Path(snapshot).is_file()
+                    else "",
+                    group_id=group_id,
+                )
+            else:
+                ok = await asyncio.to_thread(
+                    runner.send_video_by_url_sync,
+                    recv_id,
+                    url,
+                    duration=duration,
+                    snapshot_url=snapshot,
+                    group_id=group_id,
+                )
+            if not ok:
+                raise ChannelError(
+                    channel_name="openim",
+                    message=(
+                        f"openim send_video failed "
+                        f"recv={recv_id} group={group_id}"
                     ),
                 )
             return

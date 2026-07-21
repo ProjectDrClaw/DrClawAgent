@@ -3,7 +3,7 @@
 > 定位：Flutter IM 为壳，医疗助手 = OpenIM **机器人账号**单聊；Agent 侧为 DrClawAgent（QwenPaw 2.0）**内置** `openim` Channel。
 > 传输：机器人账号 **出站 WebSocket** 收发消息；仅要求 DrClawAgent → OpenIM 出网，无需公网回调 / Webhook。
 > 依赖：`openim-sdk-core`（`pyproject.toml` 主依赖）。
-> 参考：[`feishu/channel.py`](../src/qwenpaw/app/channels/feishu/channel.py)、[OpenIM 管理员 token](https://docs.openim.io/zh-Hans/restapi/apis/authenticationManagement/getAdminToken)、[openim-sdk-core](https://pypi.org/project/openim-sdk-core/)
+> 参考：[OpenIM 管理员 token](https://docs.openim.io/zh-Hans/restapi/apis/authenticationManagement/getAdminToken)、[openim-sdk-core](https://pypi.org/project/openim-sdk-core/)
 
 ---
 
@@ -13,36 +13,38 @@
 
 | 项 | 决定 |
 |----|------|
-| 产品形态 | App 用户私聊机器人，对话进入 Agent |
+| 产品形态 | App 用户私聊 / 群聊机器人，对话进入 Agent |
 | Agent 接入 | 内置 Channel `openim`，运维与其它频道一致（Console / `agent.json`） |
 | 收发 | 出站 WS 长连接；发消息仅 WS SDK，无 REST 降级 |
 | 网络 | 仅 DrClawAgent → OpenIM；OpenIM → DrClawAgent **不需要** |
 | App 主对话 | **禁止**直连 `/console/chat` SSE |
-| 当前范围 | **单聊文本 + 图片 + 文件**；语音可入站；不流式；Flutter 零改动 |
+| 当前范围 | 单聊/群聊：**文本、@文本、图片、语音、视频、文件**；群聊支持 `require_mention`；不流式 |
 | 机器人在线 | DrClawAgent **独占**登录 `app_id`（OpenIM 机器人 userID；勿在 App 再登同一号） |
 
 ### 1.2 目标
 
 1. 本机/跨网开发只需 DrClawAgent 能访问 OpenIM，无需配置回调 URL。
 2. `start()` 后台线程跑 WS；消息回调里 `_enqueue`；`stop()` 停连接与线程。
-3. 医生在 Flutter 私聊机器人即可与 Agent 对话。
+3. 医生在 Flutter 私聊或群聊（可 `@`）机器人即可与 Agent 对话。
 
-### 1.3 非目标（本阶段不做）
+### 1.3 非目标
 
-1. 流式打字机、视频消息、群聊 `@`。
+1. 流式打字机。
 2. 自动创建 OpenIM 机器人账号。
 3. Flutter 独立 Agent Tab。
 4. Webhook / HTTP 回调入站。
+5. 交互卡片 / 富文本消息类型（OpenIM 无对等协议）。
 
 ### 1.4 能力对照
 
 | 维度 | 行为 |
 |------|------|
-| 入站 | 机器人出站连接 `msg_gateway` WS |
-| 出站 | WS SDK `send_text` |
+| 入站 | 机器人出站连接 `msg_gateway` WS；单聊/群聊 |
+| 出站 | WS SDK：`send_text` / `send_image` / `send_file` / `send_sound` / `send_video` |
 | `start()` | 起 WS 线程 + login + 心跳/重连 |
 | 收消息 | `on_recv_new_message` → `_enqueue` |
-| 发消息 | `async send()` → WS SDK |
+| 发消息 | `async send` / `send_media` → WS SDK（群聊传 `group_id`） |
+| 群聊 @ | `require_mention`（配置 / `OPENIM_REQUIRE_MENTION`） |
 | Console 必填 | `api_url` + `app_id` + `app_secret` |
 | 公网回调 / HTTP router | 无 |
 | 本地状态 | `workspace_dir/openim_ws`（SQLite 等，防多实例冲突） |
@@ -54,7 +56,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ DrClawApp                                                   │
-│  登录 → 加好友(app_id) → 单聊发文本                           │
+│  登录 → 加好友/入群(app_id) → 单聊或群聊发消息（可 @）          │
 └────────────────────────────┬────────────────────────────────┘
                              │ OpenIM SDK（用户侧）
 ┌────────────────────────────▼────────────────────────────────┐
@@ -151,25 +153,31 @@ Console / `agent.json` 填三项凭证即可启用；其余继承 `BaseChannelCo
 native = {
     "channel_id": "openim",
     "sender_id": send_id,          # 对方 userID
-    "text": text,                  # 文本消息才有正文；媒体可为空
-    "content_parts": [...],        # Text / Image / File / Audio
+    "text": text,                  # 文本/@文本才有正文；媒体可为空
+    "content_parts": [...],        # Text / Image / File / Audio / Video
     "meta": {
-        "session_type": 1,
-        "content_type": 101|102|103|105,
+        "session_type": 1|2|3,
+        "is_group": bool,
+        "group_id": "...",         # 群聊
+        "bot_mentioned": bool,     # 是否 @机器人 / @全体
+        "content_type": 101|102|103|104|105|106,
+        "duration": ...,           # 语音/视频入站时长（若有）
         "server_msg_id": ...,
         "client_msg_id": ...,
     },
-    "session_id": f"openim:dm:{send_id}",
+    "session_id": "openim:dm:{send_id}" | "openim:group:{group_id}" | "openim:group:{group_id}:{sender_id}",
 }
 self._enqueue(native)
 ```
 
 过滤规则：
 
-- 仅单聊（`sessionType=1`）
-- 允许 `contentType`：`101` 文本、`102` 图片、`103` 语音、`105` 文件
+- 单聊 `sessionType=1`，或群聊 `2/3`（须有 `groupID`）
+- 允许 `contentType`：`101` 文本、`102` 图片、`103` 语音、`104` 视频、`105` 文件、`106` @文本
 - `send_id != app_id`（防自回环）
-- 文本须非空；媒体须能解析出可访问 URL
+- 群聊且 `require_mention=true` 时，须 `@` 机器人或 `@全体`
+- 群聊会话：`share_session_in_group=true` 时整群共享；默认按成员独立会话
+- 文本须非空（@文本可在剥离昵称后保留空格占位）；媒体须能解析出可访问 URL
 
 `build_agent_request_from_native` 与现有 BaseChannel 路径复用。
 
@@ -186,7 +194,9 @@ self._enqueue(native)
 1. 文本与媒体分开发送（不把 `[Image: url]` 拼进正文）
 2. 图片：本地路径 → `send_image`；HTTP URL → `send_image_by_url`
 3. 文件：本地路径 → `send_file`；HTTP URL → `send_file_by_url`
-4. 语音出站：SDK 需 `duration`，当前按文件发送
+4. 语音：`send_sound` / `send_sound_by_url`（`duration` 必填；缺省 1 秒）
+5. 视频：`send_video` / `send_video_by_url`（`duration` 必填；缺省 1 秒）
+6. 群聊出站传 `group_id`，`recv_id` 为空
 
 ### 4.4 WS 客户端
 
@@ -243,13 +253,38 @@ src/qwenpaw/app/channels/openim/
 
 ## 6. Console
 
-顶部说明：长连接收消息，无需公网回调。表单仅三项（英文标签）：
+顶部说明：长连接收消息，无需公网回调。表单：
 
-- `API URL`
-- `App ID`
-- `App Secret`
+- `API URL` / `App ID` / `App Secret`
+- `share_session_in_group`（群聊共享上下文，默认关）
 
-公共项（抽屉底部）：`enabled` / `bot_prefix` / filter / ACL。`ws_url`、`platform_id`、`admin_user_id` 不在 UI 暴露，走默认或 `agent.json`。
+公共项（抽屉底部）：`enabled` / `bot_prefix` / filter / ACL（含 `require_mention`、私聊/群聊访问控制）。`ws_url`、`platform_id`、`admin_user_id` 不在 UI 暴露，走默认或 `agent.json`。
+
+### 6.1 凭证编解码
+
+```text
+OpenIM userID  6208248507          明文 Secret  openIM123
+        │ encode_app_id                     │
+        ▼                                   │
+App ID  cli_00000001720a5abb ───────────────┴─ seal_app_secret
+                                              │
+                                              ▼
+                                    App Secret（32 位字母数字）
+```
+
+| 步骤 | 公式 |
+|------|------|
+| userID → App ID | `cli_` + `hex(uint64(userID), 16)`（可逆） |
+| App ID → userID | `str(int(hex_part, 16))` |
+| 明文 Secret → App Secret | 用 App ID 派生密钥，HMAC-CTR 加密后 Base62 成 32 位（纯标准库） |
+| App Secret → 明文 | 用同一 App ID 解密（连接 OpenIM 时用） |
+
+独立生成脚本（**不依赖本仓库**，仅需 Python 3）::
+
+```bash
+python scripts/gen_openim_credentials.py 6208248507 openIM123
+python scripts/gen_openim_credentials.py 6208248507 openIM123 --verify
+```
 
 ---
 
@@ -257,9 +292,9 @@ src/qwenpaw/app/channels/openim/
 
 | 阶段 | 内容 | 出口 |
 |------|------|------|
-| 当前 | 单聊文本 + 图片 + 文件收发；语音可入站；断线重连 | App 私聊文本/图片/文件可与 Agent 互通 |
-| 后续 | 视频消息、语音原生出站（带 duration） | — |
-| 后续 | 群聊 + `require_mention` | — |
+| 当前 | 单聊/群聊：文本、@文本、图片、语音、视频、文件；群聊 `require_mention`；断线重连 | App 私聊/群聊可与 Agent 互通 |
+| 后续 | 流式打字机 | — |
+| 不做 | 交互卡片 / 富文本 post | OpenIM 无对等协议 |
 
 ---
 
@@ -267,9 +302,10 @@ src/qwenpaw/app/channels/openim/
 
 ### 8.1 单元
 
-- `parse_text_content` / 图片文件解析 / 自回环过滤
+- `parse_text_content` / 图片文件语音视频解析 / 自回环过滤
+- 群聊入站 + `require_mention` / `bot_mentioned`
 - mock `ws_client`：文本与媒体入队断言 `_enqueue`
-- mock `send` / `send_media`：仅 WS SDK 路径
+- mock `send` / `send_media`：文本/图/文件/语音/视频；群聊 `group_id`
 
 ### 8.2 手工联调
 

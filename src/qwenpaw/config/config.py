@@ -281,7 +281,10 @@ class OpenIMConfig(BaseChannelConfig):
     admin_user_id, platform_id.
 
     Receives and sends via outbound WebSocket long connection.
-    app_id is the OpenIM robot userID; app_secret is share.yaml secret.
+    app_id: encoded App ID (cli_ + hex) or raw OpenIM robot userID.
+    app_secret: sealed 32-char App Secret or plain OpenIM secret.
+    share_session_in_group: if True, all group members share one session;
+    if False (default), each member gets an independent session.
     """
 
     api_url: str = ""
@@ -290,6 +293,7 @@ class OpenIMConfig(BaseChannelConfig):
     ws_url: str = ""
     admin_user_id: str = "imAdmin"
     platform_id: int = 7
+    share_session_in_group: bool = False
 
 
 class QQConfig(BaseChannelConfig):
