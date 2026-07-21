@@ -28,7 +28,7 @@ Repo `docs/` is ops-focused. Prefer:
 | Install, deps, first run, init | `README.md`, repo `README_zh.md` / `README.md` | `src/qwenpaw/cli/`, `pyproject.toml`, `scripts/install.*` |
 | Config, config.json, env, `DRCLAW_*` | `DRCLAW_ENV_zh.md` | `src/qwenpaw/constant.py`, `src/qwenpaw/env_resolve.py`, `src/qwenpaw/config/config.py` |
 | OpenIM, IM bot, channel setup | `DRCLAW_OPENIM_CHANNEL_zh.md` | `src/qwenpaw/app/channels/openim/` |
-| Customization, migration, branding | `DRCLAW_CUSTOMIZATION_PLAN_zh.md` | follow doc sections |
+| Customization, branding, private deploy | `DRCLAW_CUSTOMIZATION_zh.md` | follow doc sections |
 | Docs index | `README.md` (in docs/) | `docs/` |
 | Skills, skill_pool | (no dedicated md — read source) | `src/qwenpaw/agents/skill_system/`, `src/qwenpaw/agents/skills/` |
 | MCP, plugins | (no dedicated md — read source) | `src/qwenpaw/app/routers/`, `plugins/` |

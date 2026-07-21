@@ -1,4 +1,4 @@
-# Dr.Claw OpenIM 频道方案
+# Dr.Claw OpenIM 频道
 
 > 定位：Flutter IM 为壳，医疗助手 = OpenIM **机器人账号**单聊；Agent 侧为 DrClawAgent（QwenPaw 2.0）**内置** `openim` Channel。
 > 传输：机器人账号 **出站 WebSocket** 收发消息；仅要求 DrClawAgent → OpenIM 出网，无需公网回调 / Webhook。

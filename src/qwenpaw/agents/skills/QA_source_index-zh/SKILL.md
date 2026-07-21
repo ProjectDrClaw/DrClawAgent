@@ -28,7 +28,7 @@ metadata:
 | 安装、依赖、首次使用、init | `README.md`、仓库根 `README_zh.md` | `src/qwenpaw/cli/`、`pyproject.toml`、`scripts/install.*` |
 | 配置、config.json、环境变量、`DRCLAW_*` | `DRCLAW_ENV_zh.md` | `src/qwenpaw/constant.py`、`src/qwenpaw/env_resolve.py`、`src/qwenpaw/config/config.py` |
 | OpenIM、IM 机器人、频道联调 | `DRCLAW_OPENIM_CHANNEL_zh.md` | `src/qwenpaw/app/channels/openim/` |
-| 定制、迁移、品牌、私有化改造 | `DRCLAW_CUSTOMIZATION_PLAN_zh.md` | 按文档章节对应路径 |
+| 定制、品牌、私有化 | `DRCLAW_CUSTOMIZATION_zh.md` | 按文档章节对应路径 |
 | 文档索引 | `README.md`（docs 目录） | `docs/` |
 | 技能、SKILL、skill_pool | （无专题 md 时直接读源码） | `src/qwenpaw/agents/skill_system/`、`src/qwenpaw/agents/skills/` |
 | MCP、插件 | （无专题 md 时直接读源码） | `src/qwenpaw/app/routers/`、`plugins/` |

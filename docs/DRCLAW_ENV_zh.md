@@ -1,4 +1,4 @@
-# Dr.Claw 环境变量参考
+# Dr.Claw 环境变量
 
 > 应用内配置读取顺序：**`DRCLAW_*` > `QWENPAW_*` > `COPAW_*`**
 > 实现：`src/qwenpaw/env_resolve.py`（Python）、Docker `deploy/entrypoint.sh`（Shell）

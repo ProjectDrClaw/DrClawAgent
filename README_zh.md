@@ -10,7 +10,7 @@
 |------|------|
 | [环境变量](docs/DRCLAW_ENV_zh.md) | `DRCLAW_*` 运行时配置 |
 | [OpenIM 频道](docs/DRCLAW_OPENIM_CHANNEL_zh.md) | IM 机器人联调 |
-| [定制方案](docs/DRCLAW_CUSTOMIZATION_PLAN_zh.md) | 改造对照与验收 |
+| [定制说明](docs/DRCLAW_CUSTOMIZATION_zh.md) | 品牌与私有化能力总览 |
 
 ## 快速开始
 

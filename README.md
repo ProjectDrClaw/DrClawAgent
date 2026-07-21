@@ -12,7 +12,7 @@ The Python package name remains `qwenpaw`; the CLI entrypoint is **`drclaw`**.
 |-----|-------------|
 | [Environment variables](docs/DRCLAW_ENV_zh.md) | `DRCLAW_*` runtime config (Chinese) |
 | [OpenIM channel](docs/DRCLAW_OPENIM_CHANNEL_zh.md) | IM bot integration (Chinese) |
-| [Customization plan](docs/DRCLAW_CUSTOMIZATION_PLAN_zh.md) | Migration notes (Chinese) |
+| [Customization](docs/DRCLAW_CUSTOMIZATION_zh.md) | Branding & private-deployment overview (Chinese) |
 
 ## Quick start
 
