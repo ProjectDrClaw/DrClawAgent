@@ -169,6 +169,8 @@ jobs:
           DOCKER_NODE_IMAGE: ${{ inputs.docker_node_image }}
           DOCKER_UV_IMAGE: ${{ inputs.docker_uv_image }}
         run: |
+          # 腾出磁盘/内存，降低 console Vite 构建 OOM（exit 134）概率
+          docker system prune -af || true
           BUILD_ARGS="--build-arg DRCLAW_DISABLED_CHANNELS=imessage"
           if [ -n "$DOCKER_NODE_IMAGE" ]; then
             BUILD_ARGS="$BUILD_ARGS --build-arg NODE_IMAGE=$DOCKER_NODE_IMAGE"

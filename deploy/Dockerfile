@@ -9,7 +9,10 @@ ARG UV_IMAGE=ghcr.io/astral-sh/uv:latest
 FROM ${NODE_IMAGE} AS console-builder
 WORKDIR /app
 COPY console /app/console
-RUN cd /app/console && npm ci --include=dev && npm run build
+# console Vite/tsc 默认堆易 OOM（exit 134），抬高 Node 堆上限
+RUN cd /app/console \
+    && NODE_OPTIONS="--max-old-space-size=16384" npm ci --include=dev \
+    && NODE_OPTIONS="--max-old-space-size=16384" npm run build
 
 # Alias for uv binary so COPY --from can reference a build-arg image.
 FROM ${UV_IMAGE} AS uv-src
