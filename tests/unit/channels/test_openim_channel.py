@@ -31,7 +31,7 @@ from qwenpaw.app.channels.openim.constants import (
     CONTENT_TYPE_TEXT,
     CONTENT_TYPE_VIDEO,
 )
-from qwenpaw.app.channels.openim.ws_client import normalize_ws_message
+from qwenpaw.app.channels.openim.ws_client import OpenIMWSRunner, normalize_ws_message
 from qwenpaw.exceptions import ChannelError
 
 
@@ -600,6 +600,7 @@ async def test_send_via_ws_only():
         "user1",
         "[BOT]hello",
         group_id="",
+        session_type=None,
     )
 
 
@@ -619,7 +620,43 @@ async def test_send_group_text():
         "",
         "hello",
         group_id="g1",
+        session_type=3,  # App 工作群默认超级群
     )
+
+
+@pytest.mark.asyncio
+async def test_send_group_text_uses_inbound_session_type():
+    """入站 sessionType=3 时应原样出站，避免发到普通群 2。"""
+    ch = _make_channel()
+    runner = MagicMock()
+    runner.is_connected = True
+    runner.send_text_sync.return_value = True
+    ch._ws_runner = runner
+    await ch.send(
+        "openim:group:g1",
+        "hello",
+        meta={
+            "is_group": True,
+            "group_id": "g1",
+            "session_type": 3,
+        },
+    )
+    runner.send_text_sync.assert_called_once_with(
+        "",
+        "hello",
+        group_id="g1",
+        session_type=3,
+    )
+
+
+def test_resolve_send_target_strips_per_user_suffix():
+    ch = _make_channel()
+    recv, group = ch._resolve_send_target(
+        "openim:group:g1:user9",
+        meta={"is_group": True},
+    )
+    assert recv == ""
+    assert group == "g1"
 
 
 @pytest.mark.asyncio
@@ -706,6 +743,7 @@ async def test_send_content_parts_splits_text_and_media():
         "user1",
         "see image",
         group_id="",
+        session_type=None,
     )
     runner.send_image_by_url_sync.assert_called_once()
 
@@ -756,3 +794,61 @@ async def test_client_get_user_token():
     tok = await client.get_user_token("drclaw_bot")
     assert tok == "user-tok"
     await client.stop()
+
+
+class TestSilentReconnectLogging:
+    """断连日志应静默：首断 info，中间 debug，限频 warning。"""
+
+    def _runner(self, tmp_path):
+        return OpenIMWSRunner(
+            ws_url="ws://example.com:10001",
+            api_url="http://example.com:10002",
+            data_dir=tmp_path,
+            robot_user_id="bot",
+            platform_id=7,
+            on_message=lambda _m: None,
+            token_provider=lambda: "tok",
+        )
+
+    def test_first_disconnect_after_connect_is_info(self, tmp_path, caplog):
+        import logging
+
+        runner = self._runner(tmp_path)
+        runner._ever_connected = True
+        with caplog.at_level(logging.DEBUG, logger="qwenpaw.app.channels.openim.ws_client"):
+            runner._mark_disconnected("net down")
+            runner._log_disconnect_event("connect_failed", "net down")
+        assert any(
+            "reconnecting silently" in r.message for r in caplog.records
+        )
+        assert not any(
+            r.levelno >= logging.WARNING and "still down" in r.message
+            for r in caplog.records
+        )
+
+    def test_repeat_disconnect_is_debug_within_interval(self, tmp_path, caplog):
+        import logging
+        import time
+
+        runner = self._runner(tmp_path)
+        runner._ever_connected = True
+        now = time.time()
+        runner._disconnected_since = now
+        runner._last_disconnect_log_at = now  # 刚记过首断
+        with caplog.at_level(logging.DEBUG, logger="qwenpaw.app.channels.openim.ws_client"):
+            runner._log_disconnect_event("sdk_error", "again")
+        assert any(r.levelno == logging.DEBUG for r in caplog.records)
+        assert not any(r.levelno >= logging.WARNING for r in caplog.records)
+
+    def test_reconnect_success_logs_reconnected(self, tmp_path, caplog):
+        import logging
+
+        runner = self._runner(tmp_path)
+        runner._ever_connected = True
+        runner._disconnected_since = 1.0
+        runner._login_ok = False
+        with caplog.at_level(logging.INFO, logger="qwenpaw.app.channels.openim.ws_client"):
+            runner._mark_connected()
+        assert any("reconnected" in r.message for r in caplog.records)
+        assert runner.is_connected
+        assert runner._disconnected_since is None

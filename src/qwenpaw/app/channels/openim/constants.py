@@ -48,6 +48,10 @@ WS_INITIAL_RETRY_DELAY = 1.0
 WS_BACKOFF_FACTOR = 2.0
 WS_MAX_RETRY_DELAY = 60.0
 
+# 断连期间 warning 限频；持续断连超过此时长则重建 SDK 会话
+WS_DISCONNECT_WARN_INTERVAL_S = 60.0
+WS_STALE_DISCONNECT_S = 120.0
+
 # start() 等待首次 connect_success 的超时
 WS_START_CONNECT_TIMEOUT_S = 30.0
 

@@ -76,3 +76,40 @@ def test_audio_content_data_http_url_becomes_datablock():
     source = messages[0].content[0].source
     assert str(source.url) == "https://example.com/a.m4a"
     assert str(source.media_type).startswith("audio/")
+
+
+def test_get_last_user_text_supports_dict_and_text_blocks():
+    """混合 TextBlock 与裸 dict 时不应再抛 AttributeError。"""
+    from agentscope.message import Msg, TextBlock
+
+    from qwenpaw.runtime.message_convert import _get_last_user_text
+
+    msg = Msg(
+        name="user",
+        role="user",
+        content=[TextBlock(type="text", text="hello")],
+    )
+    # 模拟媒体处理后原地写入裸 dict（绕过 Msg 构造期校验）
+    msg.content.append({"type": "text", "text": "world"})
+    assert _get_last_user_text([msg]) == "hello\nworld"
+
+
+def test_get_last_user_text_empty_when_no_text():
+    from agentscope.message import Msg, DataBlock
+    from agentscope.message._block import URLSource
+
+    from qwenpaw.runtime.message_convert import _get_last_user_text
+
+    msg = Msg(
+        name="user",
+        role="user",
+        content=[
+            DataBlock(
+                source=URLSource(
+                    url="file:///tmp/a.wav",
+                    media_type="audio/wav",
+                ),
+            ),
+        ],
+    )
+    assert _get_last_user_text([msg]) is None

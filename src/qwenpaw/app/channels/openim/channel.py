@@ -941,17 +941,46 @@ class OpenIMChannel(BaseChannel):
             or handle.startswith("openim:group:")
             or handle.startswith("group:")
         ):
-            group_id = str(
-                meta.get("group_id")
+            raw = (
+                str(meta.get("group_id") or "")
                 or handle.removeprefix("openim:group:")
                 or handle.removeprefix("group:")
-                or "",
             )
+            # share_session=false 时 handle 可能是 openim:group:{gid}:{uid}
+            group_id = raw.split(":", 1)[0] if raw else ""
             return "", group_id
         recv_id = self._resolve_recv_id(handle)
         if not recv_id:
             recv_id = str(meta.get("sender_id") or "")
         return recv_id, ""
+
+    @staticmethod
+    def _resolve_session_type(
+        meta: Optional[Dict[str, Any]],
+        *,
+        group_id: str = "",
+    ) -> Optional[int]:
+        """解析出站 sessionType。
+
+        App 建群为工作群（超级群 sessionType=3）；SDK 在未传时默认普通群 2，
+        会导致群成员收不到机器人回复。群聊优先用入站 meta，缺省用超级群 3。
+        """
+        meta = meta or {}
+        raw = meta.get("session_type")
+        if raw is not None:
+            try:
+                st = int(raw)
+            except (TypeError, ValueError):
+                st = None
+            else:
+                if group_id:
+                    if st in (SESSION_TYPE_GROUP, SESSION_TYPE_SUPER_GROUP):
+                        return st
+                elif st == SESSION_TYPE_DM:
+                    return st
+        if group_id:
+            return SESSION_TYPE_SUPER_GROUP
+        return SESSION_TYPE_DM if meta else None
 
     @staticmethod
     def _media_duration(
@@ -1008,18 +1037,21 @@ class OpenIMChannel(BaseChannel):
             )
 
         runner = self._require_runner()
+        session_type = self._resolve_session_type(meta, group_id=group_id)
         ok = await asyncio.to_thread(
             runner.send_text_sync,
             recv_id,
             body,
             group_id=group_id,
+            session_type=session_type,
         )
         if not ok:
             raise ChannelError(
                 channel_name="openim",
                 message=(
                     "openim WebSocket send_text failed "
-                    f"recv={recv_id} group={group_id}"
+                    f"recv={recv_id} group={group_id} "
+                    f"session_type={session_type}"
                 ),
             )
 
@@ -1075,6 +1107,7 @@ class OpenIMChannel(BaseChannel):
         runner = self._require_runner()
         part_type = getattr(part, "type", None)
         duration = self._media_duration(meta, part)
+        session_type = self._resolve_session_type(meta, group_id=group_id)
 
         if part_type == ContentType.IMAGE:
             url = str(getattr(part, "image_url", "") or "").strip()
@@ -1087,6 +1120,7 @@ class OpenIMChannel(BaseChannel):
                     recv_id,
                     local,
                     group_id=group_id,
+                    session_type=session_type,
                 )
             else:
                 ok = await asyncio.to_thread(
@@ -1094,13 +1128,15 @@ class OpenIMChannel(BaseChannel):
                     recv_id,
                     url,
                     group_id=group_id,
+                    session_type=session_type,
                 )
             if not ok:
                 raise ChannelError(
                     channel_name="openim",
                     message=(
                         f"openim send_image failed "
-                        f"recv={recv_id} group={group_id}"
+                        f"recv={recv_id} group={group_id} "
+                        f"session_type={session_type}"
                     ),
                 )
             return
@@ -1122,6 +1158,7 @@ class OpenIMChannel(BaseChannel):
                     local,
                     file_name=name,
                     group_id=group_id,
+                    session_type=session_type,
                 )
             else:
                 ok = await asyncio.to_thread(
@@ -1130,13 +1167,15 @@ class OpenIMChannel(BaseChannel):
                     url,
                     file_name=name,
                     group_id=group_id,
+                    session_type=session_type,
                 )
             if not ok:
                 raise ChannelError(
                     channel_name="openim",
                     message=(
                         f"openim send_file failed "
-                        f"recv={recv_id} group={group_id}"
+                        f"recv={recv_id} group={group_id} "
+                        f"session_type={session_type}"
                     ),
                 )
             return
@@ -1155,6 +1194,7 @@ class OpenIMChannel(BaseChannel):
                     duration=duration,
                     sound_type=sound_type,
                     group_id=group_id,
+                    session_type=session_type,
                 )
             else:
                 ok = await asyncio.to_thread(
@@ -1164,13 +1204,15 @@ class OpenIMChannel(BaseChannel):
                     duration=duration,
                     sound_type=sound_type,
                     group_id=group_id,
+                    session_type=session_type,
                 )
             if not ok:
                 raise ChannelError(
                     channel_name="openim",
                     message=(
                         f"openim send_sound failed "
-                        f"recv={recv_id} group={group_id}"
+                        f"recv={recv_id} group={group_id} "
+                        f"session_type={session_type}"
                     ),
                 )
             return
@@ -1191,6 +1233,7 @@ class OpenIMChannel(BaseChannel):
                     if snapshot and Path(snapshot).is_file()
                     else "",
                     group_id=group_id,
+                    session_type=session_type,
                 )
             else:
                 ok = await asyncio.to_thread(
@@ -1200,13 +1243,15 @@ class OpenIMChannel(BaseChannel):
                     duration=duration,
                     snapshot_url=snapshot,
                     group_id=group_id,
+                    session_type=session_type,
                 )
             if not ok:
                 raise ChannelError(
                     channel_name="openim",
                     message=(
                         f"openim send_video failed "
-                        f"recv={recv_id} group={group_id}"
+                        f"recv={recv_id} group={group_id} "
+                        f"session_type={session_type}"
                     ),
                 )
             return

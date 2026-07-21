@@ -4,9 +4,12 @@
 Covers:
 - is_first_user_interaction
 - prepend_to_message_content
+- process_file_and_media_blocks_in_message（写回 Typed Block）
 """
 # pylint: disable=redefined-outer-name
 from unittest.mock import MagicMock
+
+import pytest
 
 from qwenpaw.agents.utils.message_processing import (
     is_first_user_interaction,
@@ -72,8 +75,59 @@ class TestIsFirstUserInteraction:
 
 
 # ---------------------------------------------------------------------------
-# prepend_to_message_content
+# process_file_and_media_blocks_in_message — 写回对象而非裸 dict
 # ---------------------------------------------------------------------------
+
+
+class TestProcessAudioWritesTypedBlocks:
+    """语音处理后 Msg.content 必须是 TextBlock/DataBlock，不能是裸 dict。"""
+
+    @pytest.mark.asyncio
+    async def test_auto_transcription_writes_text_block(self, tmp_path, monkeypatch):
+        from agentscope.message import Msg, DataBlock
+        from agentscope.message._block import URLSource
+
+        from qwenpaw.agents.utils import message_processing as mp
+
+        audio = tmp_path / "voice.wav"
+        audio.write_bytes(b"RIFF....WAVEfmt ")
+
+        monkeypatch.setattr(
+            mp,
+            "load_config",
+            lambda: MagicMock(agents=MagicMock(audio_mode="auto", language="zh")),
+        )
+
+        async def _fake_transcribe(_path):
+            return "你好医生"
+
+        monkeypatch.setattr(
+            "qwenpaw.agents.utils.audio_transcription.transcribe_audio",
+            _fake_transcribe,
+        )
+
+        msg = Msg(
+            name="user",
+            role="user",
+            content=[
+                DataBlock(
+                    source=URLSource(
+                        url=audio.as_uri(),
+                        media_type="audio/wav",
+                    ),
+                ),
+            ],
+        )
+        await mp.process_file_and_media_blocks_in_message(msg)
+
+        assert len(msg.content) >= 1
+        first = msg.content[0]
+        assert not isinstance(first, dict)
+        assert getattr(first, "type", None) == "text"
+        assert "你好医生" in (getattr(first, "text", "") or "")
+        # agentscope get_text_content 不应再因 dict 崩溃
+        assert msg.get_text_content() is not None
+
 
 
 class TestPrependToMessageContent:

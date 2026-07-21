@@ -196,11 +196,20 @@ self._enqueue(native)
 3. 文件：本地路径 → `send_file`；HTTP URL → `send_file_by_url`
 4. 语音：`send_sound` / `send_sound_by_url`（`duration` 必填；缺省 1 秒）
 5. 视频：`send_video` / `send_video_by_url`（`duration` 必填；缺省 1 秒）
-6. 群聊出站传 `group_id`，`recv_id` 为空
+6. 群聊出站传 `group_id`，`recv_id` 为空；**必须带 `sessionType`**：优先用入站 `meta.session_type`，缺省为超级群 `3`（App 建群为工作群）。勿依赖 SDK 默认普通群 `2`，否则群成员收不到回复
+7. 单聊出站 `sessionType=1`
 
 ### 4.4 WS 客户端
 
-使用 PyPI `openim-sdk-core` 的 `OpenIMWSSDK`（gob + gzip + protobuf、心跳、重连）。联调探针：
+使用 PyPI `openim-sdk-core` 的 `OpenIMWSSDK`（gob + gzip + protobuf、心跳、重连）。
+
+断连行为：
+
+- SDK `auto_reconnect=true` 内部静默重试；外层 `_run_forever` 在踢下线或持续断连超过约 120s 时重建会话
+- 日志：首断 `INFO`（`reconnecting silently`），重连成功 `INFO`（`reconnected`），中间失败默认 `DEBUG`，每 60s 最多一条 `WARNING`
+- 踢下线仍记 `ERROR`
+
+联调探针：
 
 ```bash
 # Windows PowerShell 示例

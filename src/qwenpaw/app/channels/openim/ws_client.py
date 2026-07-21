@@ -14,8 +14,10 @@ from .constants import (
     INBOUND_CONTENT_TYPES,
     SESSION_TYPE_DM,
     WS_BACKOFF_FACTOR,
+    WS_DISCONNECT_WARN_INTERVAL_S,
     WS_INITIAL_RETRY_DELAY,
     WS_MAX_RETRY_DELAY,
+    WS_STALE_DISCONNECT_S,
     WS_START_CONNECT_TIMEOUT_S,
 )
 
@@ -267,6 +269,11 @@ class OpenIMWSRunner:
         self._last_error: str = ""
         self._login_ok = False
         self._kicked = False
+        # 静默重连状态：已连通过后断连不刷屏，成功后再打 info
+        self._ever_connected = False
+        self._disconnected_since: float | None = None
+        self._last_disconnect_log_at = 0.0
+        self._disconnect_log_lock = threading.Lock()
 
     @property
     def is_connected(self) -> bool:
@@ -289,6 +296,9 @@ class OpenIMWSRunner:
         self._login_ok = False
         self._kicked = False
         self._last_error = ""
+        self._ever_connected = False
+        self._disconnected_since = None
+        self._last_disconnect_log_at = 0.0
         self._thread = threading.Thread(
             target=self._run_forever,
             name="openim-ws",
@@ -346,6 +356,7 @@ class OpenIMWSRunner:
         text: str,
         *,
         group_id: str = "",
+        session_type: int | None = None,
     ) -> bool:
         """任意线程调用 SDK send_text；成功需拿到 ack。"""
         return self._sdk_send(
@@ -354,6 +365,7 @@ class OpenIMWSRunner:
                 text,
                 recv_id=recv_id or "",
                 group_id=group_id or "",
+                session_type=session_type,
             ),
         )
 
@@ -363,6 +375,7 @@ class OpenIMWSRunner:
         image_path: str,
         *,
         group_id: str = "",
+        session_type: int | None = None,
     ) -> bool:
         """本地路径发图。"""
         return self._sdk_send(
@@ -371,6 +384,7 @@ class OpenIMWSRunner:
                 image_path,
                 recv_id=recv_id or "",
                 group_id=group_id or "",
+                session_type=session_type,
             ),
         )
 
@@ -382,6 +396,7 @@ class OpenIMWSRunner:
         width: int = 0,
         height: int = 0,
         group_id: str = "",
+        session_type: int | None = None,
     ) -> bool:
         """公网 URL 发图。"""
         return self._sdk_send(
@@ -392,6 +407,7 @@ class OpenIMWSRunner:
                 height=int(height or 0),
                 recv_id=recv_id or "",
                 group_id=group_id or "",
+                session_type=session_type,
             ),
         )
 
@@ -403,6 +419,7 @@ class OpenIMWSRunner:
         file_name: str = "",
         file_type: str = "",
         group_id: str = "",
+        session_type: int | None = None,
     ) -> bool:
         """本地路径发文件。"""
         return self._sdk_send(
@@ -413,6 +430,7 @@ class OpenIMWSRunner:
                 group_id=group_id or "",
                 file_name=file_name or "",
                 file_type=file_type or "",
+                session_type=session_type,
             ),
         )
 
@@ -424,6 +442,7 @@ class OpenIMWSRunner:
         file_name: str = "",
         file_type: str = "",
         group_id: str = "",
+        session_type: int | None = None,
     ) -> bool:
         """公网 URL 发文件。"""
         return self._sdk_send(
@@ -434,6 +453,7 @@ class OpenIMWSRunner:
                 recv_id=recv_id or "",
                 group_id=group_id or "",
                 file_type=file_type or "",
+                session_type=session_type,
             ),
         )
 
@@ -445,6 +465,7 @@ class OpenIMWSRunner:
         duration: int,
         sound_type: str = "",
         group_id: str = "",
+        session_type: int | None = None,
     ) -> bool:
         """本地路径发语音（duration 必填，单位秒）。"""
         return self._sdk_send(
@@ -455,6 +476,7 @@ class OpenIMWSRunner:
                 recv_id=recv_id or "",
                 group_id=group_id or "",
                 sound_type=sound_type or "",
+                session_type=session_type,
             ),
         )
 
@@ -466,6 +488,7 @@ class OpenIMWSRunner:
         duration: int,
         sound_type: str = "",
         group_id: str = "",
+        session_type: int | None = None,
     ) -> bool:
         """公网 URL 发语音。"""
         return self._sdk_send(
@@ -476,6 +499,7 @@ class OpenIMWSRunner:
                 recv_id=recv_id or "",
                 group_id=group_id or "",
                 sound_type=sound_type or "",
+                session_type=session_type,
             ),
         )
 
@@ -488,6 +512,7 @@ class OpenIMWSRunner:
         video_type: str = "",
         snapshot_path: str = "",
         group_id: str = "",
+        session_type: int | None = None,
     ) -> bool:
         """本地路径发视频（duration 必填）。"""
         return self._sdk_send(
@@ -499,6 +524,7 @@ class OpenIMWSRunner:
                 group_id=group_id or "",
                 video_type=video_type or "",
                 snapshot_path=snapshot_path or "",
+                session_type=session_type,
             ),
         )
 
@@ -511,6 +537,7 @@ class OpenIMWSRunner:
         video_type: str = "",
         snapshot_url: str = "",
         group_id: str = "",
+        session_type: int | None = None,
     ) -> bool:
         """公网 URL 发视频。"""
         return self._sdk_send(
@@ -522,6 +549,7 @@ class OpenIMWSRunner:
                 group_id=group_id or "",
                 video_type=video_type or "",
                 snapshot_url=snapshot_url or "",
+                session_type=session_type,
             ),
         )
 
@@ -554,16 +582,72 @@ class OpenIMWSRunner:
         return True
 
     def _mark_connected(self) -> None:
+        was_reconnect = (
+            self._ever_connected
+            and (
+                self._disconnected_since is not None
+                or not self._login_ok
+            )
+        )
         self._login_ok = True
         self._kicked = False
         self._last_error = ""
+        self._disconnected_since = None
+        self._last_disconnect_log_at = 0.0
         self._connected_event.set()
+        if was_reconnect:
+            logger.info(
+                "openim WebSocket reconnected user=%s",
+                self._user_id,
+            )
+        elif not self._ever_connected:
+            logger.info(
+                "openim WebSocket connected user=%s",
+                self._user_id,
+            )
+        self._ever_connected = True
 
     def _mark_disconnected(self, reason: str = "") -> None:
         self._login_ok = False
         self._connected_event.clear()
         if reason:
             self._last_error = reason
+        if self._disconnected_since is None:
+            self._disconnected_since = time.time()
+
+    def _log_disconnect_event(self, kind: str, detail: str) -> None:
+        """断连/重连失败：默认 debug；首断 info；之后按间隔 warning。"""
+        now = time.time()
+        with self._disconnect_log_lock:
+            if self._disconnected_since is None:
+                self._disconnected_since = now
+            # 本轮断连的首次事件
+            if self._last_disconnect_log_at == 0.0:
+                self._last_disconnect_log_at = now
+                if self._ever_connected:
+                    logger.info(
+                        "openim WebSocket disconnected (%s), "
+                        "reconnecting silently",
+                        kind,
+                    )
+                else:
+                    logger.debug(
+                        "openim WebSocket %s (waiting first connect): %s",
+                        kind,
+                        detail,
+                    )
+                return
+            if now - self._last_disconnect_log_at >= WS_DISCONNECT_WARN_INTERVAL_S:
+                self._last_disconnect_log_at = now
+                down_for = now - (self._disconnected_since or now)
+                logger.warning(
+                    "openim WebSocket still down %.0fs (%s): %s",
+                    down_for,
+                    kind,
+                    detail,
+                )
+                return
+        logger.debug("openim WebSocket %s: %s", kind, detail)
 
     def _handle_raw(self, msg: Any) -> None:
         normalized = normalize_ws_message(msg)
@@ -607,14 +691,10 @@ class OpenIMWSRunner:
 
                 def _on_connect_success() -> None:
                     self._mark_connected()
-                    logger.info(
-                        "openim WebSocket connected user=%s",
-                        self._user_id,
-                    )
 
                 def _on_connect_failed(exc: Exception) -> None:
                     self._mark_disconnected(str(exc))
-                    logger.warning("openim WebSocket connect failed: %s", exc)
+                    self._log_disconnect_event("connect_failed", str(exc))
 
                 def _on_kicked() -> None:
                     self._kicked = True
@@ -637,7 +717,13 @@ class OpenIMWSRunner:
 
                 def _on_error(exc: Exception) -> None:
                     self._last_error = str(exc)
-                    logger.warning("openim WebSocket sdk error: %s", exc)
+                    if not self.is_connected:
+                        self._log_disconnect_event("sdk_error", str(exc))
+                    else:
+                        logger.debug(
+                            "openim WebSocket sdk error: %s",
+                            exc,
+                        )
 
                 sdk = OpenIMWSSDK(
                     cfg,
@@ -651,7 +737,7 @@ class OpenIMWSRunner:
                 with self._sdk_lock:
                     self._sdk = sdk
 
-                logger.info(
+                logger.debug(
                     "openim WebSocket login gateway=%s user=%s platform=%s",
                     gateway,
                     self._user_id,
@@ -662,9 +748,24 @@ class OpenIMWSRunner:
                 session_ok = True
                 retry_delay = WS_INITIAL_RETRY_DELAY
 
-                # SDK 内部 auto_reconnect；此处看守直到 stop / kicked
+                # SDK 内部 auto_reconnect；此处看守直到 stop / kicked /
+                # 持续断连过久则重建会话
                 while not self._stop_event.is_set() and not self._kicked:
                     if self._stop_event.wait(timeout=1.0):
+                        break
+                    if (
+                        self._disconnected_since is not None
+                        and not self.is_connected
+                        and (
+                            time.time() - self._disconnected_since
+                        )
+                        >= WS_STALE_DISCONNECT_S
+                    ):
+                        logger.info(
+                            "openim WebSocket stale disconnect %.0fs, "
+                            "rebuilding session",
+                            time.time() - self._disconnected_since,
+                        )
                         break
 
             except Exception as exc:
@@ -672,8 +773,10 @@ class OpenIMWSRunner:
                 if self._stop_event.is_set():
                     logger.debug("openim ws stopped during connect")
                 else:
-                    logger.exception(
-                        "openim WebSocket failed, will reconnect",
+                    self._log_disconnect_event("session_error", str(exc))
+                    logger.debug(
+                        "openim WebSocket session error",
+                        exc_info=True,
                     )
             finally:
                 self._mark_disconnected(self._last_error)
@@ -693,7 +796,7 @@ class OpenIMWSRunner:
             if session_ok and not self._kicked:
                 retry_delay = WS_INITIAL_RETRY_DELAY
             self._kicked = False
-            logger.info(
+            logger.debug(
                 "openim WebSocket reconnecting in %.1fs...",
                 retry_delay,
             )

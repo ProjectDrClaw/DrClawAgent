@@ -39,12 +39,35 @@ def _media_type_to_block_type(media_type: str | None) -> str:
 
 
 def _get_last_user_text(msgs: List[Any]) -> str | None:
-    """Extract the text of the last user message from a list of ``Msg``."""
+    """Extract the text of the last user message from a list of ``Msg``.
+
+    兼容 TextBlock 对象与历史遗留的 dict content block，避免
+    ``get_text_content()`` 在裸 dict 上访问 ``.type`` 崩溃。
+    """
     if not msgs:
         return None
     last = msgs[-1]
+    content = getattr(last, "content", None)
+    if isinstance(content, str):
+        return content or None
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            if isinstance(block, dict):
+                if block.get("type") == "text":
+                    text = block.get("text")
+                    if text:
+                        parts.append(str(text))
+            elif getattr(block, "type", None) == "text":
+                text = getattr(block, "text", None)
+                if text:
+                    parts.append(str(text))
+        return "\n".join(parts) if parts else None
     if hasattr(last, "get_text_content"):
-        return last.get_text_content()
+        try:
+            return last.get_text_content()
+        except AttributeError:
+            return None
     return None
 
 

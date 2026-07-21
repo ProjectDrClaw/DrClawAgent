@@ -8,17 +8,46 @@ This module handles:
 """
 import asyncio
 import logging
+import mimetypes
 import os
 import urllib.parse
 from pathlib import Path
 from typing import Optional
 
-from agentscope.message import Msg, TextBlock
+from agentscope.message import Msg, TextBlock, DataBlock
+from agentscope.message._block import URLSource
 
 from ...config import load_config
 from .file_handling import download_file_from_base64, download_file_from_url
 
 logger = logging.getLogger(__name__)
+
+
+def _text_block(text: str) -> TextBlock:
+    """构造 agentscope TextBlock（勿写入裸 dict，否则 get_text_content 会崩）。"""
+    return TextBlock(type="text", text=text)
+
+
+def _url_data_block(
+    url: str,
+    media_type: str,
+    name: Optional[str] = None,
+) -> DataBlock:
+    """构造带 URLSource 的 DataBlock。"""
+    return DataBlock(
+        source=URLSource(url=url, media_type=media_type),
+        name=name,
+    )
+
+
+def _guess_media_type(block_type: str, local_path: str, fallback: str) -> str:
+    """按 block 类型与路径后缀推断 media_type。"""
+    if block_type == "audio":
+        return _media_type_from_path(local_path)
+    guessed, _ = mimetypes.guess_type(local_path)
+    if guessed:
+        return guessed
+    return fallback
 
 
 async def _process_single_file_block(
@@ -194,34 +223,46 @@ def _update_block_with_local_path(
     block: dict,
     block_type: str,
     local_path: str,
-) -> dict:
-    """Update block with downloaded local path."""
+) -> DataBlock:
+    """用本地路径更新 block，并返回可写入 Msg.content 的 DataBlock。"""
+    filename = block.get("filename") or os.path.basename(local_path)
+    url = _local_file_url(local_path)
+    src = block.get("source") if isinstance(block.get("source"), dict) else {}
+    fallback_mt = {
+        "image": "image/jpeg",
+        "video": "video/mp4",
+        "audio": "audio/mpeg",
+        "file": "application/octet-stream",
+    }.get(block_type, "application/octet-stream")
+    media_type = (
+        (src.get("media_type") if isinstance(src, dict) else None)
+        or _guess_media_type(block_type, local_path, fallback_mt)
+    )
+
+    # 同步更新 dict，供后续 audio 管线读取
     if block_type == "file":
-        block["source"] = local_path
-        if not block.get("filename"):
-            block["filename"] = os.path.basename(local_path)
+        block["source"] = {
+            "type": "url",
+            "url": url,
+            "media_type": media_type,
+        }
+        block["filename"] = filename
     else:
-        if block_type == "audio":
-            block["source"] = {
-                "type": "url",
-                "url": _local_file_url(local_path),
-                "media_type": _media_type_from_path(local_path),
-            }
-        else:
-            block["source"] = {
-                "type": "url",
-                "url": _local_file_url(local_path),
-            }
-    return block
+        block["source"] = {
+            "type": "url",
+            "url": url,
+            "media_type": media_type,
+        }
+
+    return _url_data_block(url, media_type, name=filename)
 
 
-def _handle_download_failure(block_type: str) -> Optional[dict]:
+def _handle_download_failure(block_type: str) -> Optional[TextBlock]:
     """Handle download failure based on block type."""
     if block_type == "file":
-        return {
-            "type": "text",
-            "text": "[Error: Unknown file source type or empty data]",
-        }
+        return _text_block(
+            "[Error: Unknown file source type or empty data]",
+        )
     logger.debug("Failed to download %s block, keeping original", block_type)
     return None
 
@@ -269,35 +310,32 @@ async def _process_audio_block(
         else:
             # Unsupported format and conversion failed — show placeholder
             # instead of sending an unsupported audio block to the model.
-            message_content[index] = {
-                "type": "text",
-                "text": (
-                    "[Voice message]: (audio conversion failed, "
-                    "install ffmpeg to enable native audio)"
-                ),
-            }
+            message_content[index] = _text_block(
+                "[Voice message]: (audio conversion failed, "
+                "install ffmpeg to enable native audio)",
+            )
             return True
+        media_type = _media_type_from_path(audio_path)
+        url = _local_file_url(audio_path)
         block["source"] = {
             "type": "url",
-            "url": _local_file_url(audio_path),
-            "media_type": _media_type_from_path(audio_path),
+            "url": url,
+            "media_type": media_type,
         }
+        # 写回 DataBlock，避免 Msg.content 残留裸 dict / 未更新的旧块
+        message_content[index] = _url_data_block(url, media_type)
         return True
 
     # "auto": attempt transcription.
     text = await transcribe_audio(local_path)
     if text:
-        message_content[index] = {
-            "type": "text",
-            "text": f"[Voice message]: {text}",
-        }
+        message_content[index] = _text_block(f"[Voice message]: {text}")
         return True
 
     # Transcription failed — show file-uploaded placeholder.
-    message_content[index] = {
-        "type": "text",
-        "text": "[Voice message]: (audio file received)",
-    }
+    message_content[index] = _text_block(
+        "[Voice message]: (audio file received)",
+    )
     return False
 
 
@@ -376,10 +414,9 @@ async def _process_single_block(
     except Exception as e:
         logger.error("Failed to process %s block: %s", block_type, e)
         if block_type == "file":
-            message_content[index] = {
-                "type": "text",
-                "text": f"[Error: Failed to download file - {e}]",
-            }
+            message_content[index] = _text_block(
+                f"[Error: Failed to download file - {e}]",
+            )
         return None
 
 
