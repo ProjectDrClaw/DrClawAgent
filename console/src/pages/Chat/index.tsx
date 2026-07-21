@@ -59,6 +59,7 @@ import {
   resolveChatAgentIdentity,
   resolveChatColorPrimary,
 } from "./chatAgentIdentity";
+import AgentWelcomeSurface from "./components/AgentWelcomeSurface";
 import { withGenericFallback } from "../../components/Chat/ToolCards/adapters/v1Adapter";
 import { applyApprovalLevelToRequestBody } from "./approvalPayload";
 import {
@@ -2544,10 +2545,6 @@ export default function ChatPage() {
       extScalar[ChatScalar.welcomeAvatar]?.value,
       locale,
     );
-    const extNick = resolveLocalized(
-      extScalar[ChatScalar.welcomeNick]?.value,
-      locale,
-    );
     const extPrompts = resolveLocalized(
       extScalar[ChatScalar.welcomePrompts]?.value,
       locale,
@@ -2708,6 +2705,7 @@ export default function ChatPage() {
       t,
       colorPrimary,
     );
+    const resolvedAvatar = extAvatar ?? agentIdentity.avatarSrc;
 
     // leftHeader: whole-section render wins, otherwise partial merge {logo, title}.
     const mergedLeftHeader: any =
@@ -2761,15 +2759,22 @@ export default function ChatPage() {
       },
       welcome: {
         ...i18nConfig.welcome,
-        nick: extNick ?? agentIdentity.nick,
-        avatar: extAvatar ?? agentIdentity.avatarSrc,
+        // 清空 SDK ResponseCard 内置头像/昵称，改由 HostResponseCard 渲染
+        avatar: undefined,
+        nick: undefined,
         ...(extGreeting !== undefined ? { greeting: extGreeting } : {}),
         ...(extDescription !== undefined
           ? { description: extDescription }
           : {}),
         ...(extPrompts !== undefined ? { prompts: extPrompts } : {}),
         // SDK uses `render` if present and ignores the other fields.
-        ...(wrappedWelcomeRender ? { render: wrappedWelcomeRender } : {}),
+        ...(wrappedWelcomeRender
+          ? { render: wrappedWelcomeRender }
+          : {
+              render: (props: WelcomeRenderProps) => (
+                <AgentWelcomeSurface {...props} avatar={resolvedAvatar} />
+              ),
+            }),
       },
       sender: {
         ...(i18nConfig as any)?.sender,
