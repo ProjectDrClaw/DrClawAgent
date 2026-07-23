@@ -27,6 +27,10 @@ on:
         description: "Override Dockerfile UV_IMAGE build-arg (for fork without ACR access)"
         type: string
         default: ""
+      ref:
+        description: "Git ref/SHA to checkout for docker/script verification (empty = default)"
+        type: string
+        default: ""
 
 jobs:
   # ── pip install wheel ──────────────────────────────────────────────────────
@@ -163,6 +167,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Build Docker image (amd64 only)
         env:
@@ -246,6 +252,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Set up Node.js (for console build during from-source install)
         uses: actions/setup-node@v4
