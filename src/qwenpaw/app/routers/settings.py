@@ -41,7 +41,8 @@ def _save(data: dict) -> None:
 
 @router.get("/language", summary="Get UI language")
 async def get_language() -> dict:
-    return {"language": _load().get("language", "en")}
+    # Dr.Claw 默认中文界面；与 Console i18n fallbackLng=zh 对齐
+    return {"language": _load().get("language", "zh")}
 
 
 @router.put("/language", summary="Update UI language")

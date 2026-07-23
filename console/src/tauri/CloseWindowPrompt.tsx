@@ -99,7 +99,7 @@ export default function CloseWindowPrompt() {
       });
     };
 
-    syncTrayLabels(i18n.resolvedLanguage || i18n.language || "en");
+    syncTrayLabels(i18n.resolvedLanguage || i18n.language || "zh");
     i18n.on("languageChanged", syncTrayLabels);
 
     return () => {

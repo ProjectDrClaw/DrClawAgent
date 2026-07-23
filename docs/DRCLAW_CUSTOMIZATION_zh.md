@@ -109,6 +109,7 @@
 |----|------|
 | 入口 | 设置 → 语音转写 |
 | 后端 | `disabled` / `whisper_api` / `local_whisper` |
+| 行为 | **严格按 Console 配置**：`disabled` 不转写；`whisper_api` / `local_whisper` 成功后把语音替换为文本再给模型 |
 | Whisper API | 选用已配置的 OpenAI 兼容提供商（含内网 SenseVoice 等） |
 | 转写模型 | Console 可配置 `transcription_model`（如 `SenseVoiceSmall`） |
 | API | `GET/PUT /workspace/transcription-model` |

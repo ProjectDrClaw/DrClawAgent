@@ -67,14 +67,14 @@ _BUILTIN_CACHE_LOCK = threading.Lock()
 def _normalize_builtin_skill_language(
     language: str | None,
     *,
-    fallback: str = "en",
+    fallback: str = "zh",
 ) -> str:
     normalized = str(language or "").strip().lower()
     if normalized in BUILTIN_SKILL_LANGUAGES:
         return normalized
     if fallback == "":
         return ""
-    return fallback if fallback in BUILTIN_SKILL_LANGUAGES else "en"
+    return fallback if fallback in BUILTIN_SKILL_LANGUAGES else "zh"
 
 
 def get_builtin_skill_language_preference() -> str:
@@ -100,7 +100,8 @@ def get_builtin_skill_language_preference() -> str:
         if explicit:
             result = explicit
         else:
-            ui_lang = str(payload.get("language", "") or "").strip().lower()
+            # 与 /settings/language 默认 zh 对齐：未配置 UI 语言时用中文技能包
+            ui_lang = str(payload.get("language", "zh") or "zh").strip().lower()
             result = "zh" if ui_lang.startswith("zh") else "en"
         _builtin_cache["language_preference"] = result
         return result
@@ -584,7 +585,7 @@ def _normalize_builtin_import_requests(
     registry: dict[str, dict[str, BuiltinSkillVariant]],
     candidates: dict[str, dict[str, Any]],
     *,
-    preferred_language: str = "en",
+    preferred_language: str = "zh",
 ) -> tuple[list[tuple[str, str]], list[str], list[str]]:
     """Validate and normalize import requests to (name, language) tuples."""
     normalized: list[tuple[str, str]] = []

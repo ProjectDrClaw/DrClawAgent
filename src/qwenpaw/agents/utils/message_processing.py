@@ -326,15 +326,21 @@ async def _process_audio_block(
         message_content[index] = _url_data_block(url, media_type)
         return True
 
-    # "auto": attempt transcription.
+    # "auto": 能转写就直接转写成文本再给模型
     text = await transcribe_audio(local_path)
+    lang = "zh"
+    try:
+        lang = (load_config().agents.language or "zh").strip().lower()
+    except Exception:
+        pass
+    voice_label = "语音消息" if lang.startswith("zh") else "Voice message"
     if text:
-        message_content[index] = _text_block(f"[Voice message]: {text}")
+        message_content[index] = _text_block(f"[{voice_label}]: {text}")
         return True
 
-    # Transcription failed — show file-uploaded placeholder.
+    # 转写不可用：保留文件路径通知，便于人工/模型按路径处理
     message_content[index] = _text_block(
-        "[Voice message]: (audio file received)",
+        f"[{voice_label}]: (audio file received)",
     )
     return False
 

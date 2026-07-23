@@ -7,20 +7,20 @@ import pytest
 
 @pytest.mark.integration
 @pytest.mark.p1
-def test_settings_language_default_en(app_server) -> None:
+def test_settings_language_default_zh(app_server) -> None:
     """Test purpose:
     - Verify the default language value in a fresh workspace.
 
     Test flow:
     1. Read language settings.
-    2. Assert status is 200 and value is ``en``.
+    2. Assert status is 200 and value is ``zh``.
 
     API endpoints:
     - GET /api/settings/language
     """
     response = app_server.api_request("GET", "/api/settings/language")
     assert response.status_code == 200, app_server.logs_tail()
-    assert response.json() == {"language": "en"}
+    assert response.json() == {"language": "zh"}
 
 
 @pytest.mark.integration

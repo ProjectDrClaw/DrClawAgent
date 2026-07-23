@@ -7,6 +7,7 @@ Transcribes audio files to text using either:
 
 Transcription is only attempted when explicitly enabled via the
 ``transcription_provider_type`` config setting.  The default is ``"disabled"``.
+``disabled`` 表示关闭转写，不会偷偷探测其它服务。
 """
 
 import asyncio

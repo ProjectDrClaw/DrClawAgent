@@ -323,7 +323,11 @@ def build_inbound_parts(
         ]
     if content_type == CONTENT_TYPE_SOUND:
         url, _, sound_type = parse_sound_meta(content)
-        fmt = sound_type or "audio"
+        # 扩展名优先用 soundType / URL 后缀，避免落成 *.audio
+        fmt = (sound_type or "").strip().lstrip(".")
+        if not fmt or fmt.lower() in ("audio", "sound", "octet-stream"):
+            suffix = Path(urlparse(url).path).suffix.lstrip(".")
+            fmt = suffix or "m4a"
         return "", [
             AudioContent(type=ContentType.AUDIO, data=url, format=fmt),
         ]
@@ -580,8 +584,19 @@ class OpenIMChannel(BaseChannel):
             return local if os.path.isfile(local) else None
 
         # 优先用原始文件名（飞书同款）；否则按扩展名拼 kind.ext
+        # 注意：OpenIM soundType 缺失时上游常填占位 "audio"，不能当扩展名
+        _generic_names = {
+            "file",
+            "file.bin",
+            "audio",
+            "video",
+            "sound",
+            "media",
+            "bin",
+            "octet-stream",
+        }
         hint_name = Path(filename_hint or "").name.strip()
-        if hint_name and hint_name not in ("file", "file.bin", "audio", "video"):
+        if hint_name and hint_name.lower() not in _generic_names:
             filename = hint_name
         else:
             ext = ""
@@ -590,6 +605,8 @@ class OpenIMChannel(BaseChannel):
                     ext = type_hint.rsplit("/", 1)[-1]
                 else:
                     ext = type_hint.lstrip(".")
+            if ext.lower() in _generic_names:
+                ext = ""
             if not ext:
                 path_name = urlparse(raw).path
                 guessed = mimetypes.guess_extension(
@@ -600,6 +617,8 @@ class OpenIMChannel(BaseChannel):
                 else:
                     suffix = Path(path_name).suffix.lstrip(".")
                     ext = suffix or default_ext
+            if not ext or ext.lower() in _generic_names:
+                ext = default_ext
             filename = f"{kind}.{ext}"
 
         safe_id = "".join(c for c in (msg_id or uuid4().hex) if c.isalnum())[
@@ -680,7 +699,7 @@ class OpenIMChannel(BaseChannel):
                     AudioContent(
                         type=ContentType.AUDIO,
                         data=local,
-                        format=fmt or "audio",
+                        format=fmt or "m4a",
                     ),
                 )
             else:

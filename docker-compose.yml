@@ -21,6 +21,7 @@ services:
     networks:
       - drclaw-net
 
+  # 可选：在 Console「设置 → 语音转写」选 Whisper API，并把提供商指向本服务
   sensevoice:
     image: ${REGISTRY:-ghcr.io/projectdrclaw}/sensevoice:cpu
     container_name: drclaw-sensevoice
@@ -29,6 +30,3 @@ services:
       - "8898:8898"
     networks:
       - drclaw-net
-
-
-
