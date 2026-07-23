@@ -504,6 +504,7 @@ class TestEnqueue:
             kind="media",
             type_hint="",
             default_ext="bin",
+            filename_hint="",
         ):
             assert url.startswith("https://")
             assert kind == "file"

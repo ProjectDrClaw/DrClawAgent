@@ -4,7 +4,7 @@ networks:
 
 services:
   drclaw:
-    image: ${REGISTRY:-ghcr.io/9999-12-31}/drclaw:latest
+    image: ${REGISTRY:-ghcr.io/projectdrclaw}/drclaw:latest
     container_name: drclaw
     restart: unless-stopped
     ports:
@@ -22,43 +22,13 @@ services:
       - drclaw-net
 
   sensevoice:
-    image: ${REGISTRY:-ghcr.io/9999-12-31}/sensevoice:cpu
-    container_name: sensevoice
+    image: ${REGISTRY:-ghcr.io/projectdrclaw}/sensevoice:cpu
+    container_name: drclaw-sensevoice
     restart: unless-stopped
     ports:
       - "8898:8898"
     networks:
       - drclaw-net
 
-  database:
-    image: ${REGISTRY:-docker.io}/postgres:14
-    container_name: database
-    restart: unless-stopped
-    ports:
-      - "35432:5432"
-    environment:
-      POSTGRES_USER: drclaw
-      POSTGRES_PASSWORD: Xmz@323!
-      POSTGRES_DB: drclaw
-      TZ: Asia/Shanghai
-    volumes:
-      - ./drclaw-database/data:/var/lib/postgresql/data
-      - ./drclaw-database/init-scripts:/docker-entrypoint-initdb.d
-      - /etc/localtime:/etc/localtime:ro
-    networks:
-      - drclaw-net
 
-  business:
-    image: ${REGISTRY:-ghcr.io/9999-12-31}/drclaw-business:latest
-    container_name: business
-    restart: unless-stopped
-    ports:
-      - "8087:8087"
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SQLITE_DB_PATH: /app/data/business.db
-    volumes:
-      - ./drclaw-business:/app/data
-    networks:
-      - drclaw-net
 

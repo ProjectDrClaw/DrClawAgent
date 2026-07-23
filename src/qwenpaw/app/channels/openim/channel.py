@@ -13,7 +13,7 @@ import urllib.request
 from collections import OrderedDict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse, urlsplit, urlunsplit
 from uuid import uuid4
 
 from qwenpaw.schemas import (
@@ -62,6 +62,17 @@ logger = logging.getLogger(__name__)
 
 # token_provider 在 WS 线程同步等待刷新的上限
 DEFAULT_TOKEN_TIMEOUT_S = 30.0
+
+
+def _encode_url_for_retrieve(url: str) -> str:
+    """对 URL path 做百分号编码，兼容中文文件名。"""
+    parts = urlsplit(url)
+    if not parts.scheme or not parts.netloc:
+        return url
+    encoded_path = quote(parts.path, safe="/:@")
+    return urlunsplit(
+        (parts.scheme, parts.netloc, encoded_path, parts.query, parts.fragment),
+    )
 
 
 def _as_content_dict(content: Any) -> Dict[str, Any]:
@@ -403,6 +414,9 @@ class OpenIMChannel(BaseChannel):
         self._ws_runner: Optional[OpenIMWSRunner] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._processed_msg_ids: OrderedDict[str, None] = OrderedDict()
+        # 合并短间隔内的「文本 + 文件/图」；上传慢时窗口宜稍大。
+        # 查房录音 App 已改为先文件后文本，本窗口用于合并短间隔多条消息。
+        self._debounce_seconds = 5.0
 
     @classmethod
     def from_env(
@@ -553,8 +567,9 @@ class OpenIMChannel(BaseChannel):
         kind: str = "media",
         type_hint: str = "",
         default_ext: str = "bin",
+        filename_hint: str = "",
     ) -> Optional[str]:
-        """下载远程媒体到本地 media_dir（对齐飞书落盘后再入队）。"""
+        """下载远程媒体到本地 media_dir（对齐飞书：保留原始文件名）。"""
         raw = (url or "").strip()
         if not raw:
             return None
@@ -564,28 +579,38 @@ class OpenIMChannel(BaseChannel):
             local = urllib.request.url2pathname(urlparse(raw).path)
             return local if os.path.isfile(local) else None
 
-        ext = ""
-        if type_hint:
-            if "/" in type_hint:
-                ext = type_hint.rsplit("/", 1)[-1]
-            else:
-                ext = type_hint.lstrip(".")
-        if not ext:
-            path_name = urlparse(raw).path
-            guessed = mimetypes.guess_extension(
-                mimetypes.guess_type(path_name)[0] or "",
-            )
-            if guessed:
-                ext = guessed.lstrip(".")
-            else:
-                suffix = Path(path_name).suffix.lstrip(".")
-                ext = suffix or default_ext
+        # 优先用原始文件名（飞书同款）；否则按扩展名拼 kind.ext
+        hint_name = Path(filename_hint or "").name.strip()
+        if hint_name and hint_name not in ("file", "file.bin", "audio", "video"):
+            filename = hint_name
+        else:
+            ext = ""
+            if type_hint:
+                if "/" in type_hint:
+                    ext = type_hint.rsplit("/", 1)[-1]
+                else:
+                    ext = type_hint.lstrip(".")
+            if not ext:
+                path_name = urlparse(raw).path
+                guessed = mimetypes.guess_extension(
+                    mimetypes.guess_type(path_name)[0] or "",
+                )
+                if guessed:
+                    ext = guessed.lstrip(".")
+                else:
+                    suffix = Path(path_name).suffix.lstrip(".")
+                    ext = suffix or default_ext
+            filename = f"{kind}.{ext}"
+
         safe_id = "".join(c for c in (msg_id or uuid4().hex) if c.isalnum())[
             :32
         ] or uuid4().hex
-        dest = self._media_dir() / f"{safe_id}_{kind}.{ext}"
+        # 对齐飞书：{message_id}_{original_filename}
+        dest = self._media_dir() / f"{safe_id}_{filename}"
         try:
-            urllib.request.urlretrieve(raw, dest)  # noqa: S310
+            # 路径含中文等非 ASCII 时须编码，否则 urlretrieve 会失败
+            fetch_url = _encode_url_for_retrieve(raw)
+            urllib.request.urlretrieve(fetch_url, dest)  # noqa: S310
             if dest.is_file() and dest.stat().st_size > 0:
                 return str(dest.resolve())
             logger.warning("openim %s download empty: %s", kind, raw[:120])
@@ -721,6 +746,7 @@ class OpenIMChannel(BaseChannel):
                 kind="file",
                 type_hint=type_hint,
                 default_ext="bin",
+                filename_hint=name,
             )
             if local:
                 out.append(
