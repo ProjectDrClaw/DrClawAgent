@@ -438,7 +438,11 @@ class TestEnqueue:
         captured: list[Any] = []
         ch.set_enqueue(captured.append)
 
-        def _no_download(_url, _msg_id="", _video_type=""):
+        def _no_download(  # pylint: disable=unused-argument
+            url,
+            msg_id="",
+            video_type="",
+        ):
             return None
 
         ch._download_video_to_local = (  # type: ignore[method-assign]
@@ -468,7 +472,11 @@ class TestEnqueue:
         local.parent.mkdir(parents=True, exist_ok=True)
         local.write_bytes(b"voice-bytes")
 
-        def _fake_download(url, _msg_id="", _sound_type=""):
+        def _fake_download(  # pylint: disable=unused-argument
+            url,
+            msg_id="",
+            sound_type="",
+        ):
             assert url.startswith("https://")
             return str(local)
 
@@ -501,7 +509,11 @@ class TestEnqueue:
         local.parent.mkdir(parents=True, exist_ok=True)
         local.write_bytes(b"video-bytes")
 
-        def _fake_download(url, _msg_id="", _video_type=""):
+        def _fake_download(  # pylint: disable=unused-argument
+            url,
+            msg_id="",
+            video_type="",
+        ):
             assert url.startswith("https://")
             return str(local)
 
@@ -554,13 +566,13 @@ class TestEnqueue:
         local.parent.mkdir(parents=True, exist_ok=True)
         local.write_bytes(b"%PDF")
 
-        def _fake_download(
+        def _fake_download(  # pylint: disable=unused-argument
             url,
-            _msg_id="",
+            msg_id="",
             kind="media",
-            _type_hint="",
-            _default_ext="bin",
-            _filename_hint="",
+            type_hint="",
+            default_ext="bin",
+            filename_hint="",
         ):
             assert url.startswith("https://")
             assert kind == "file"
