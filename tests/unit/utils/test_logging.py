@@ -18,6 +18,7 @@ from qwenpaw.utils.logging import (
     add_project_file_handler,
     sanitize_log_value,
     setup_logger,
+    LOG_FILE_BASENAME,
     LOG_NAMESPACE,
     _LOG_BACKUP_COUNT,
     _LOG_MAX_BYTES,
@@ -197,13 +198,13 @@ class TestAddFileHandler:
 
     def test_creates_log_directory(self, tmp_path):
         """S级: Creates log directory if it doesn't exist."""
-        log_path = tmp_path / "logs" / "qwenpaw.log"
+        log_path = tmp_path / "logs" / LOG_FILE_BASENAME
         add_project_file_handler(log_path)
         assert log_path.parent.exists()
 
     def test_idempotent_same_path(self, tmp_path):
         """S级: Same path twice doesn't duplicate handlers."""
-        log_path = tmp_path / "qwenpaw.log"
+        log_path = tmp_path / LOG_FILE_BASENAME
 
         # First call
         add_project_file_handler(log_path)
@@ -216,7 +217,7 @@ class TestAddFileHandler:
 
     def test_adds_file_handler(self, tmp_path):
         """S级: File handler is added to logger."""
-        log_path = tmp_path / "qwenpaw.log"
+        log_path = tmp_path / LOG_FILE_BASENAME
 
         # Clear handlers first
         logger = logging.getLogger(LOG_NAMESPACE)
@@ -243,7 +244,7 @@ class TestAddFileHandler:
             logger.handlers = original_handlers
 
     def test_uses_environment_rotation_limits(self, tmp_path, monkeypatch):
-        log_path = (tmp_path / "qwenpaw.log").resolve()
+        log_path = (tmp_path / LOG_FILE_BASENAME).resolve()
         monkeypatch.setenv("QWENPAW_LOG_MAX_SIZE", "10MB")
         monkeypatch.setenv("QWENPAW_LOG_MAX_BACKUPS", "5")
         logger = logging.getLogger(LOG_NAMESPACE)
@@ -304,12 +305,12 @@ def test_zero_log_backups_is_supported(monkeypatch):
 class TestLogConstants:
     """Test module-level constants."""
 
-    def test_log_namespace_is_qwenpaw(self):
-        """S级: LOG_NAMESPACE is 'qwenpaw'."""
-        assert LOG_NAMESPACE == "qwenpaw"
+    def test_log_namespace_matches_project_name(self):
+        """S级: LOG_NAMESPACE follows PROJECT_NAME (DrClaw → drclaw)."""
+        assert LOG_NAMESPACE == "drclaw"
 
     def test_log_namespace_used_by_setup(self):
         """S级: setup_logger uses LOG_NAMESPACE."""
         # Get the logger that setup_logger would configure
         logger = logging.getLogger(LOG_NAMESPACE)
-        assert logger.name == "qwenpaw"
+        assert logger.name == "drclaw"

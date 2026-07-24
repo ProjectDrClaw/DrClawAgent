@@ -108,7 +108,9 @@ class TestFeishuQRCodeAuthHandler:
             result = await feishu_handler.fetch_qrcode(mock_request)
 
             assert result.poll_token == "device_123"
-            assert "source=QwenPaw" in result.scan_url
+            from qwenpaw.constant import PROJECT_NAME
+
+            assert f"source={PROJECT_NAME}" in result.scan_url
             assert "code=abc" in result.scan_url
 
     @pytest.mark.asyncio
