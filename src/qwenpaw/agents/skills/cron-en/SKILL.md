@@ -1,6 +1,6 @@
 ---
 name: cron
-description: Use this skill only for scheduled or recurring tasks. Manage jobs with qwenpaw cron list/create/get/state/update/pause/resume/delete/run, and always pass --agent-id explicitly.
+description: Use this skill only for scheduled or recurring tasks. Manage jobs with drclaw cron list/create/get/state/update/pause/resume/delete/run, and always pass --agent-id explicitly.
 metadata:
   builtin_skill_version: "1.7"
   qwenpaw:
@@ -39,7 +39,7 @@ Use this skill only when you need to **automatically execute something at a futu
 
 ### Must Explicitly Specify `--agent-id`
 
-All `qwenpaw cron` commands **must** include:
+All `drclaw cron` commands **must** include:
 
 ```bash
 --agent-id <your_agent_id>
@@ -54,29 +54,29 @@ Do not omit it, or the task may be incorrectly created in the default agent's wo
 
 ```bash
 # List tasks
-qwenpaw cron list --agent-id <agent_id>
+drclaw cron list --agent-id <agent_id>
 
 # View task details
-qwenpaw cron get <job_id> --agent-id <agent_id>
+drclaw cron get <job_id> --agent-id <agent_id>
 
 # View task status
-qwenpaw cron state <job_id> --agent-id <agent_id>
+drclaw cron state <job_id> --agent-id <agent_id>
 
 # Create a task
-qwenpaw cron create --agent-id <agent_id> ...
+drclaw cron create --agent-id <agent_id> ...
 
 # Delete a task
-qwenpaw cron delete <job_id> --agent-id <agent_id>
+drclaw cron delete <job_id> --agent-id <agent_id>
 
 # Pause / Resume a task
-qwenpaw cron pause <job_id> --agent-id <agent_id>
-qwenpaw cron resume <job_id> --agent-id <agent_id>
+drclaw cron pause <job_id> --agent-id <agent_id>
+drclaw cron resume <job_id> --agent-id <agent_id>
 
 # Run an existing task once immediately
-qwenpaw cron run <job_id> --agent-id <agent_id>
+drclaw cron run <job_id> --agent-id <agent_id>
 
 # Update an existing task
-qwenpaw cron update <job_id> --agent-id <agent_id> ...
+drclaw cron update <job_id> --agent-id <agent_id> ...
 ```
 
 ---
@@ -136,7 +136,7 @@ If any of this information is missing, confirm with the user before creating the
 
 ```bash
 # Recurring task (--schedule-type cron)
-qwenpaw cron create \
+drclaw cron create \
   --agent-id <agent_id> \
   --type text \
   --schedule-type cron \
@@ -150,7 +150,7 @@ qwenpaw cron create \
 
 ```bash
 # Recurring task (--schedule-type cron)
-qwenpaw cron create \
+drclaw cron create \
   --agent-id <agent_id> \
   --type agent \
   --schedule-type cron \
@@ -168,7 +168,7 @@ for `text` tasks.
 
 ```bash
 # Scheduled one-time: remind at 9 AM tomorrow (no repeat)
-qwenpaw cron create \
+drclaw cron create \
   --agent-id <agent_id> \
   --type text \
   --schedule-type scheduled \
@@ -183,7 +183,7 @@ qwenpaw cron create \
 
 ```bash
 # Scheduled repeating: next two weeks, every day at 9 AM (14 runs)
-qwenpaw cron create \
+drclaw cron create \
   --agent-id <agent_id> \
   --type text \
   --schedule-type scheduled \
@@ -202,7 +202,7 @@ qwenpaw cron create \
 ### Create from JSON
 
 ```bash
-qwenpaw cron create --agent-id <agent_id> -f job_spec.json
+drclaw cron create --agent-id <agent_id> -f job_spec.json
 ```
 
 ---
@@ -214,7 +214,7 @@ qwenpaw cron create --agent-id <agent_id> -f job_spec.json
 2. Confirm execution time/schedule
 3. Confirm channel, target-user, target-session
 4. Explicitly include --agent-id
-5. Create the task with qwenpaw cron create
+5. Create the task with drclaw cron create
 6. Manage tasks afterwards with list / state / pause / resume / delete
 ```
 
@@ -251,7 +251,7 @@ If the user has not specified the time, schedule, target channel, or target sess
 Before pausing, resuming, or deleting, first run:
 
 ```bash
-qwenpaw cron list --agent-id <agent_id>
+drclaw cron list --agent-id <agent_id>
 ```
 
 to find the correct `job_id`.
@@ -261,25 +261,25 @@ to find the correct `job_id`.
 ## Usage Tips
 
 - When parameters are missing, ask the user before creating
-- Before modifying/pausing/deleting, run `qwenpaw cron list --agent-id <agent_id>` first
-- To troubleshoot issues, use `qwenpaw cron state <job_id> --agent-id <agent_id>`
+- Before modifying/pausing/deleting, run `drclaw cron list --agent-id <agent_id>` first
+- To troubleshoot issues, use `drclaw cron state <job_id> --agent-id <agent_id>`
 - When showing commands to the user, provide complete, copy-pasteable versions
 - If the user mentions "save to inbox" (or not), explicitly include `--save-result-to-inbox` or `--no-save-result-to-inbox`
 - If the user asks for background or silent execution with no channel reply, use `--silent` on an `agent` task
-- Before creating, you can run `qwenpaw chats list --agent-id <agent_id>` to get valid `target-user` and `target-session`
+- Before creating, you can run `drclaw chats list --agent-id <agent_id>` to get valid `target-user` and `target-session`
 
 ---
 
 ## Help Information
 
 ```bash
-qwenpaw cron -h
-qwenpaw cron list -h
-qwenpaw cron create -h
-qwenpaw cron get -h
-qwenpaw cron state -h
-qwenpaw cron pause -h
-qwenpaw cron resume -h
-qwenpaw cron delete -h
-qwenpaw cron run -h
+drclaw cron -h
+drclaw cron list -h
+drclaw cron create -h
+drclaw cron get -h
+drclaw cron state -h
+drclaw cron pause -h
+drclaw cron resume -h
+drclaw cron delete -h
+drclaw cron run -h
 ```

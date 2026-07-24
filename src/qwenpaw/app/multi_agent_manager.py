@@ -18,10 +18,7 @@ from .agent_startup import (
     AgentStartupStatus,
 )
 from .workspace import Workspace
-from ..constant import (
-    BUILTIN_QA_AGENT_ID,
-    CUSTOM_AGENT_STARTUP_CONCURRENCY,
-)
+from ..constant import CUSTOM_AGENT_STARTUP_CONCURRENCY
 from ..config.utils import load_config
 from ..utils.startup_display import AgentStartupDisplay
 
@@ -714,7 +711,7 @@ class MultiAgentManager:
 
         core_agent_ids = [
             agent_id
-            for agent_id in ("default", BUILTIN_QA_AGENT_ID)
+            for agent_id in ("default",)
             if agent_id in enabled_agents
         ]
         custom_agent_ids = [

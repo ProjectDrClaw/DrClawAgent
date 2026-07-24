@@ -15,6 +15,12 @@ describe("getAgentDisplayName", () => {
     ).toBe("agent.defaultDisplayName");
   });
 
+  it('returns i18n key when id is "default" and name is Dr.Claw', () => {
+    expect(
+      getAgentDisplayName({ id: "default", name: "Dr.Claw" }, t as any),
+    ).toBe("agent.defaultDisplayName");
+  });
+
   it('returns i18n key when id is "default" and name is empty', () => {
     expect(getAgentDisplayName({ id: "default", name: "" }, t as any)).toBe(
       "agent.defaultDisplayName",

@@ -45,7 +45,6 @@ from .registry import Registry
 
 # Setup utilities
 from .setup_utils import (
-    copy_builtin_qa_md_files,
     copy_md_files,
     copy_template_md_files,
     copy_workspace_md_files,
@@ -90,11 +89,9 @@ __all__ = [
     # Registry
     "Registry",
     # Setup utilities
-    "copy_builtin_qa_md_files",
     "copy_md_files",
     "copy_template_md_files",
     "copy_workspace_md_files",
-    # Setup utilities
     "normalize_agent_language",
     # Context stats
     "AsMsgHandler",

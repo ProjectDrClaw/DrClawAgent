@@ -194,19 +194,6 @@ def _discover_agent_languages() -> frozenset[str]:
 
 SUPPORTED_AGENT_LANGUAGES: frozenset[str] = _discover_agent_languages()
 
-BUILTIN_QA_AGENT_ID = "DRCLAW_QA_Agent_0.2"
-BUILTIN_QA_AGENT_NAME = "QA Agent"
-# Default skills when the builtin QA workspace is first created only.
-BUILTIN_QA_AGENT_SKILL_NAMES: tuple[str, ...] = (
-    "guidance",
-    "QA_source_index",
-)
-
-# CoPaw-era builtin QA; may remain in config.json 鈥?disabled when the current
-# ``BUILTIN_QA_AGENT_ID`` profile is first created (see ``migration``), not
-# every startup, so users can re-enable this id if they want.
-LEGACY_QA_AGENT_ID = "CoPaw_QA_Agent_0.1beta1"
-
 TOKEN_USAGE_FILE = EnvVarLoader.get_str(
     "DRCLAW_TOKEN_USAGE_FILE",
     "token_usage.json",

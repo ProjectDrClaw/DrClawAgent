@@ -227,7 +227,7 @@ python scripts/probe_openim_ws.py
 
 | 方法 | 行为 |
 |------|------|
-| `from_config` / `from_env` | 读配置，构造 client；**不**在构造时连网 |
+| `from_config` / `from_env` | 读配置，构造 client；**不**在构造时连网；`from_config` 须接收 `display_config`（对齐上游 `ChannelDisplayConfig`，否则 `ChannelManager` 初始化会失败并静默跳过，导致只能收不能发） |
 | `async start` | 校验配置 → 取 token → 起 `_ws_thread` → `_run_ws_forever` |
 | `async stop` | 设 stop flag → 关 SDK → join 线程 |
 | `async send` | 仅当 enabled 且 WS 已连接 |

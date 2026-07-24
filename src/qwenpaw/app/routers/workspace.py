@@ -33,7 +33,7 @@ from ...config.config import load_agent_config, save_agent_config
 from ...agents.memory.agent_md_manager import AgentMdManager
 from ...agents.templates import get_workspace_md_template_id
 from ...agents.utils import copy_workspace_md_files
-from ...constant import BUILTIN_QA_AGENT_ID, SUPPORTED_AGENT_LANGUAGES
+from ...constant import SUPPORTED_AGENT_LANGUAGES
 from ..agent_context import get_agent_for_request, get_coding_dir
 
 
@@ -643,8 +643,7 @@ async def put_agent_language(
             language,
             workspace.workspace_dir,
             md_template_id=get_workspace_md_template_id(
-                agent_config.template_id
-                or ("qa" if agent_id == BUILTIN_QA_AGENT_ID else None),
+                agent_config.template_id,
             ),
             only_if_missing=False,
         )

@@ -33,6 +33,7 @@ from ..base import (
     OutgoingContentPart,
     ProcessHandler,
 )
+from ..renderer import ChannelDisplayConfig
 from ..utils import file_url_to_local_path
 from .client import OpenIMClient, derive_ws_url
 from .constants import (
@@ -359,10 +360,8 @@ class OpenIMChannel(BaseChannel):
         platform_id: int = 7,
         workspace_dir: Path | None = None,
         on_reply_sent: OnReplySent = None,
-        show_tool_details: bool = True,
-        filter_tool_messages: bool = False,
+        display_config: ChannelDisplayConfig | None = None,
         no_text_debounce: bool = True,
-        filter_thinking: bool = False,
         dm_policy: str = "open",
         group_policy: str = "open",
         allow_from: Optional[List[str]] = None,
@@ -372,13 +371,12 @@ class OpenIMChannel(BaseChannel):
         access_control_group: bool = False,
         share_session_in_group: bool = False,
     ):
+        # 对齐飞书等通道：展示项走 ChannelDisplayConfig，不再传旧 kwargs
         super().__init__(
             process,
             on_reply_sent=on_reply_sent,
-            show_tool_details=show_tool_details,
-            filter_tool_messages=filter_tool_messages,
+            display_config=display_config,
             no_text_debounce=no_text_debounce,
-            filter_thinking=filter_thinking,
             dm_policy=dm_policy,
             group_policy=group_policy,
             allow_from=allow_from,
@@ -461,10 +459,8 @@ class OpenIMChannel(BaseChannel):
         process: ProcessHandler,
         config: OpenIMChannelConfig,
         on_reply_sent: OnReplySent = None,
-        show_tool_details: bool = True,
-        filter_tool_messages: bool = False,
+        display_config: ChannelDisplayConfig | None = None,
         no_text_debounce: bool = True,
-        filter_thinking: bool = False,
         workspace_dir: Path | None = None,
     ) -> "OpenIMChannel":
         return cls(
@@ -479,10 +475,9 @@ class OpenIMChannel(BaseChannel):
             platform_id=int(config.platform_id or 7),
             workspace_dir=workspace_dir,
             on_reply_sent=on_reply_sent,
-            show_tool_details=show_tool_details,
-            filter_tool_messages=filter_tool_messages,
+            display_config=display_config
+            or ChannelDisplayConfig.from_config(config),
             no_text_debounce=no_text_debounce,
-            filter_thinking=filter_thinking,
             dm_policy=config.dm_policy or "open",
             group_policy=config.group_policy or "open",
             allow_from=config.allow_from or [],

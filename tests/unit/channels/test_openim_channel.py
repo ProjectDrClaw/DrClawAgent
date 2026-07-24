@@ -53,6 +53,57 @@ def _make_channel(**overrides: Any) -> OpenIMChannel:
     return OpenIMChannel(**defaults)
 
 
+class TestOpenIMFromConfigDisplayConfig:
+    """合并上游 ChannelDisplayConfig 后，from_config 须能被 ChannelManager 调用。"""
+
+    def test_from_config_accepts_display_config(self):
+        from types import SimpleNamespace
+
+        from qwenpaw.app.channels.renderer import ChannelDisplayConfig
+
+        async def _noop_process(_request):
+            yield  # pragma: no cover
+
+        cfg = SimpleNamespace(
+            enabled=True,
+            api_url="http://example.com:10002",
+            app_id="bot1",
+            app_secret="secret",
+            bot_prefix="",
+            ws_url="ws://example.com:10001",
+            admin_user_id="imAdmin",
+            platform_id=7,
+            dm_policy="open",
+            group_policy="open",
+            allow_from=[],
+            deny_message="",
+            require_mention=False,
+            access_control_dm=False,
+            access_control_group=False,
+            share_session_in_group=False,
+            show_thinking=True,
+            show_tool_calls=True,
+            show_tool_results=True,
+        )
+        display = ChannelDisplayConfig.from_config(
+            cfg,
+            show_tool_details=True,
+        )
+        ch = OpenIMChannel.from_config(
+            process=_noop_process,
+            config=cfg,
+            display_config=display,
+            no_text_debounce=True,
+        )
+        assert ch.enabled is True
+        assert ch._display_config.show_tool_details is True
+
+    def test_init_rejects_legacy_show_tool_details_kwarg(self):
+        """旧 kwargs 不应再传给 BaseChannel，避免静默初始化失败。"""
+        with pytest.raises(TypeError):
+            _make_channel(show_tool_details=True)
+
+
 class TestDeriveWsUrl:
     def test_explicit(self):
         assert (

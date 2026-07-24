@@ -97,9 +97,7 @@
 
 ### 5.3 QA Agent
 
-- `drclaw init` / `drclaw app` **默认不创建** QA Agent
-- 模板与技能文案已对齐 Dr.Claw / 仓库 `docs` / `~/.drclaw`
-- 仍可按 `qa` 模板手动创建（ID：`DRCLAW_QA_Agent_0.2`）
+已移除内置 QA Agent（含 `qa` 模板与 `md_files/qa`）。若旧配置里仍有 `DRCLAW_QA_Agent_0.2` 等 profile，可在 Console 中手动删除。
 
 ---
 

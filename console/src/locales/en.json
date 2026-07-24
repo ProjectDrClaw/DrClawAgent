@@ -526,7 +526,7 @@
     "deleteSuccess": "Agent deleted successfully",
     "deleteFailed": "Failed to delete agent",
     "selectAgent": "Select Agent",
-    "defaultDisplayName": "Default Agent",
+    "defaultDisplayName": "Dr.Claw",
     "currentWorkspace": "Current Agent",
     "switchSuccess": "Agent switched successfully",
     "switchFailed": "Failed to switch agent",

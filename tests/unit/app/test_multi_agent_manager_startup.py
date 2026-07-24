@@ -16,7 +16,6 @@ import qwenpaw.app.multi_agent_manager as multi_agent_manager_module
 import qwenpaw.constant as constants
 from qwenpaw.app.agent_startup import AgentStartupStatus
 from qwenpaw.app.multi_agent_manager import MultiAgentManager
-from qwenpaw.constant import BUILTIN_QA_AGENT_ID
 
 
 def _config(*agent_ids: str):
@@ -110,22 +109,19 @@ async def test_core_agents_overlap_before_custom_agents(
     monkeypatch,
 ) -> None:
     manager = MultiAgentManager()
-    config = _config("default", BUILTIN_QA_AGENT_ID, "custom")
+    config = _config("default", "custom")
     monkeypatch.setattr(
         "qwenpaw.app.multi_agent_manager.load_config",
         lambda: config,
     )
 
-    core_started = set()
-    both_core_started = asyncio.Event()
     release_core = asyncio.Event()
+    core_started = asyncio.Event()
     custom_started = asyncio.Event()
 
     async def get_agent(agent_id: str):
-        if agent_id in {"default", BUILTIN_QA_AGENT_ID}:
-            core_started.add(agent_id)
-            if len(core_started) == 2:
-                both_core_started.set()
+        if agent_id == "default":
+            core_started.set()
             await release_core.wait()
         else:
             custom_started.set()
@@ -139,61 +135,65 @@ async def test_core_agents_overlap_before_custom_agents(
         ),
     )
 
-    await asyncio.wait_for(both_core_started.wait(), timeout=1)
+    await asyncio.wait_for(core_started.wait(), timeout=1)
     assert not custom_started.is_set()
     release_core.set()
     result = await asyncio.wait_for(task, timeout=1)
 
     assert result == {
         "default": True,
-        BUILTIN_QA_AGENT_ID: True,
         "custom": True,
     }
     callback.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_core_ready_waits_for_enabled_qa(monkeypatch) -> None:
-    """Ready is published only after both enabled core agents finish."""
+async def test_core_ready_fires_after_default_before_custom(
+    monkeypatch,
+) -> None:
+    """Ready is published after default finishes, without waiting on custom."""
     manager = MultiAgentManager()
-    config = _config("default", BUILTIN_QA_AGENT_ID)
+    config = _config("default", "custom")
     monkeypatch.setattr(
         "qwenpaw.app.multi_agent_manager.load_config",
         lambda: config,
     )
     default_done = asyncio.Event()
-    qa_started = asyncio.Event()
-    release_qa = asyncio.Event()
+    release_custom = asyncio.Event()
+    custom_started = asyncio.Event()
+    callback = MagicMock()
 
     async def get_agent(agent_id: str):
         if agent_id == "default":
             default_done.set()
         else:
-            qa_started.set()
-            await release_qa.wait()
+            custom_started.set()
+            await release_custom.wait()
         return SimpleNamespace()
 
     manager.get_agent = AsyncMock(side_effect=get_agent)
-    callback = MagicMock()
     task = asyncio.create_task(
         manager.start_all_configured_agents(on_core_ready=callback),
     )
 
     await asyncio.wait_for(default_done.wait(), timeout=1)
-    await asyncio.wait_for(qa_started.wait(), timeout=1)
-    callback.assert_not_called()
+    # Give the core-ready callback a chance to run before custom finishes.
+    await asyncio.sleep(0.05)
+    callback.assert_called_once_with({"default": True})
+    await asyncio.wait_for(custom_started.wait(), timeout=1)
 
-    release_qa.set()
+    release_custom.set()
     await asyncio.wait_for(task, timeout=1)
-    callback.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_core_ready_does_not_wait_for_disabled_qa(monkeypatch) -> None:
-    """A disabled QA agent is excluded from the core readiness phase."""
+async def test_core_ready_does_not_wait_for_disabled_custom(
+    monkeypatch,
+) -> None:
+    """A disabled non-default agent is excluded from startup."""
     manager = MultiAgentManager()
-    config = _config("default", BUILTIN_QA_AGENT_ID)
-    config.agents.profiles[BUILTIN_QA_AGENT_ID].enabled = False
+    config = _config("default", "custom")
+    config.agents.profiles["custom"].enabled = False
     monkeypatch.setattr(
         "qwenpaw.app.multi_agent_manager.load_config",
         lambda: config,
@@ -250,7 +250,7 @@ async def test_custom_agent_startup_respects_concurrency(
     monkeypatch,
 ) -> None:
     custom_ids = [f"custom-{index}" for index in range(6)]
-    config = _config("default", BUILTIN_QA_AGENT_ID, *custom_ids)
+    config = _config("default", *custom_ids)
     monkeypatch.setattr(
         "qwenpaw.app.multi_agent_manager.load_config",
         lambda: config,
@@ -340,7 +340,7 @@ async def test_runtime_startups_share_concurrency_and_pending_state(
 @pytest.mark.asyncio
 async def test_startup_display_skips_empty_custom_phase(monkeypatch) -> None:
     manager = MultiAgentManager()
-    config = _config("default", BUILTIN_QA_AGENT_ID)
+    config = _config("default")
     monkeypatch.setattr(
         "qwenpaw.app.multi_agent_manager.load_config",
         lambda: config,

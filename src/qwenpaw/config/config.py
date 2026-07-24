@@ -2187,28 +2187,6 @@ class ToolsConfig(BaseModel):
         return self
 
 
-def build_qa_agent_tools_config() -> ToolsConfig:
-    """Tools preset for builtin ``default_qa_agent`` (first workspace init).
-
-    Only these are enabled: execute_shell_command, read_file, edit_file,
-    write_file, view_image. All other built-ins are disabled.
-    """
-    allow = frozenset(
-        {
-            "execute_shell_command",
-            "read_file",
-            "write_file",
-            "edit_file",
-            "view_image",
-        },
-    )
-    builtin_tools = {
-        name: tc.model_copy(update={"enabled": name in allow})
-        for name, tc in _default_builtin_tools().items()
-    }
-    return ToolsConfig(builtin_tools=builtin_tools)
-
-
 def build_local_agent_tools_config() -> ToolsConfig:
     """Tools preset for local collaborative agents.
 
@@ -2815,8 +2793,8 @@ def migrate_legacy_config_to_multi_agent() -> bool:
     # Create default agent configuration from legacy settings
     default_agent_config = AgentProfileConfig(
         id="default",
-        name="Default Agent",
-        description="Default QwenPaw agent",
+        name="Dr.Claw",
+        description="Default Dr.Claw agent",
         workspace_dir=str(default_workspace),
         channels=config.channels if config.channels else None,
         mcp=config.mcp if config.mcp else None,
