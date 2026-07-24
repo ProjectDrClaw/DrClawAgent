@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -222,7 +222,8 @@ LOG_LEVEL_ENV = "DRCLAW_LOG_LEVEL"
 # Fixed desktop backend port. When set, get_stable_port() uses this port
 # instead of auto-assigning. When unset, desktop backends default to 8088.
 DEFAULT_DESKTOP_PORT = 8088
-# Default bind address for desktop backends (Tauri sidecar and ``drclaw desktop``).
+# Default bind address for desktop backends
+# (Tauri sidecar and ``drclaw desktop``).
 DEFAULT_DESKTOP_API_HOST = "0.0.0.0"
 DRCLAW_DESKTOP_PORT = _get_env("DRCLAW_DESKTOP_PORT")
 # 兼容旧代码导入

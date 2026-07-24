@@ -72,7 +72,13 @@ def _encode_url_for_retrieve(url: str) -> str:
         return url
     encoded_path = quote(parts.path, safe="/:@")
     return urlunsplit(
-        (parts.scheme, parts.netloc, encoded_path, parts.query, parts.fragment),
+        (
+            parts.scheme,
+            parts.netloc,
+            encoded_path,
+            parts.query,
+            parts.fragment,
+        ),
     )
 
 
@@ -203,7 +209,9 @@ def detect_bot_mentioned(body: Dict[str, Any], *, app_id: str) -> bool:
         return False
     at_list = [
         str(v)
-        for v in (body.get("atUserIDList") or body.get("at_user_id_list") or [])
+        for v in (
+            body.get("atUserIDList") or body.get("at_user_id_list") or []
+        )
         if v is not None
     ]
     at_list.extend(_at_user_ids_from_content(body.get("content")))
@@ -512,9 +520,7 @@ class OpenIMChannel(BaseChannel):
         if meta.get("is_group"):
             return f"openim:group:{meta.get('group_id', '')}"
         return str(
-            meta.get("sender_id")
-            or getattr(request, "user_id", "")
-            or "",
+            meta.get("sender_id") or getattr(request, "user_id", "") or "",
         )
 
     def build_agent_request_from_native(
@@ -616,9 +622,10 @@ class OpenIMChannel(BaseChannel):
                 ext = default_ext
             filename = f"{kind}.{ext}"
 
-        safe_id = "".join(c for c in (msg_id or uuid4().hex) if c.isalnum())[
-            :32
-        ] or uuid4().hex
+        safe_id = (
+            "".join(c for c in (msg_id or uuid4().hex) if c.isalnum())[:32]
+            or uuid4().hex
+        )
         # 对齐飞书：{message_id}_{original_filename}
         dest = self._media_dir() / f"{safe_id}_{filename}"
         try:
@@ -749,7 +756,10 @@ class OpenIMChannel(BaseChannel):
                 out.append(part)
                 continue
             url = getattr(part, "file_url", None)
-            name = str(getattr(part, "filename", None) or "file").strip() or "file"
+            name = (
+                str(getattr(part, "filename", None) or "file").strip()
+                or "file"
+            )
             if not isinstance(url, str) or not url.strip():
                 out.append(part)
                 continue
@@ -1041,6 +1051,8 @@ class OpenIMChannel(BaseChannel):
         if part is not None:
             candidates.append(getattr(part, "duration", None))
         for raw in candidates:
+            if raw is None:
+                continue
             try:
                 value = int(raw)
             except (TypeError, ValueError):
@@ -1129,7 +1141,7 @@ class OpenIMChannel(BaseChannel):
         for media in media_parts:
             await self.send_media(to_handle, media, meta)
 
-    async def send_media(
+    async def send_media(  # pylint: disable=too-many-statements
         self,
         to_handle: str,
         part: OutgoingContentPart,
