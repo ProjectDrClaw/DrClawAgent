@@ -59,6 +59,31 @@ def test_no_legacy_fields_is_not_migrated():
     assert channels["qq"] == {"show_tool_calls": False}
 
 
+def test_openim_quiet_display_defaults_once():
+    """OpenIM 一次性收成安静默认，且不重复覆盖用户后续改动。"""
+    channels = {
+        "openim": {
+            "enabled": True,
+            "show_tool_calls": True,
+            "show_tool_results": True,
+            "show_thinking": True,
+        },
+    }
+
+    assert migrate_channel_display_fields(channels) is True
+    assert channels["openim"]["show_tool_calls"] is False
+    assert channels["openim"]["show_tool_results"] is False
+    assert channels["openim"]["show_thinking"] is False
+    assert channels["openim"]["_drclaw_openim_quiet_display"] is True
+
+    # 用户重新打开后，迁移不应再次强制关掉
+    channels["openim"]["show_tool_calls"] = True
+    channels["openim"]["show_thinking"] = True
+    assert migrate_channel_display_fields(channels) is False
+    assert channels["openim"]["show_tool_calls"] is True
+    assert channels["openim"]["show_thinking"] is True
+
+
 def test_root_config_migration_persists(tmp_path):
     config_path = tmp_path / "config.json"
     raw = {

@@ -44,6 +44,10 @@ from .constants import (
     CONTENT_TYPE_SOUND,
     CONTENT_TYPE_TEXT,
     CONTENT_TYPE_VIDEO,
+    CUSTOM_TYPE_THINKING,
+    CUSTOM_TYPE_TOOL_CALL,
+    CUSTOM_TYPE_TOOL_GUARD_APPROVAL,
+    CUSTOM_TYPE_TOOL_RESULT,
     DEFAULT_MEDIA_DURATION_S,
     INBOUND_CONTENT_TYPES,
     INBOUND_SESSION_TYPES,
@@ -1106,6 +1110,277 @@ class OpenIMChannel(BaseChannel):
                     f"session_type={session_type}"
                 ),
             )
+
+    async def on_event_message_completed(  # type: ignore[override]
+        self,
+        request: Any,
+        to_handle: str,
+        event: Any,
+        send_meta: Dict[str, Any],
+    ) -> None:
+        """审批 / 工具 / 思考发 custom 卡片；其它走默认文本/媒体路径。"""
+        if await self._try_send_approval_card(to_handle, event, send_meta):
+            return
+        if await self._try_send_runtime_card(to_handle, event, send_meta):
+            return
+        await super().on_event_message_completed(
+            request,
+            to_handle,
+            event,
+            send_meta,
+        )
+
+    async def _try_send_runtime_card(
+        self,
+        to_handle: str,
+        event: Any,
+        send_meta: Dict[str, Any],
+    ) -> bool:
+        """将工具调用 / 工具结果 / 思考发为 App 可渲染的 custom 消息。"""
+        from qwenpaw.schemas import MessageType
+
+        if not self.enabled:
+            return False
+        msg_type = getattr(event, "type", None)
+        type_val = (
+            msg_type.value if hasattr(msg_type, "value") else str(msg_type or "")
+        )
+        display = self._display_config
+
+        kind: str | None = None
+        custom_type: int | None = None
+        if type_val in {
+            MessageType.FUNCTION_CALL.value,
+            MessageType.PLUGIN_CALL.value,
+            MessageType.MCP_TOOL_CALL.value,
+        }:
+            if not display.show_tool_calls:
+                return True
+            kind = "tool_call"
+            custom_type = CUSTOM_TYPE_TOOL_CALL
+        elif type_val in {
+            MessageType.FUNCTION_CALL_OUTPUT.value,
+            MessageType.PLUGIN_CALL_OUTPUT.value,
+            MessageType.MCP_TOOL_CALL_OUTPUT.value,
+        }:
+            if not display.show_tool_results:
+                return True
+            kind = "tool_result"
+            custom_type = CUSTOM_TYPE_TOOL_RESULT
+        elif type_val == MessageType.REASONING.value:
+            if not display.show_thinking:
+                return True
+            kind = "thinking"
+            custom_type = CUSTOM_TYPE_THINKING
+        else:
+            return False
+
+        recv_id, group_id = self._resolve_send_target(to_handle, send_meta)
+        if not recv_id and not group_id:
+            return False
+
+        data = self._build_runtime_card_data(event, kind=kind, display=display)
+        if data is None:
+            return True
+
+        payload = {"customType": custom_type, "data": data}
+        data_str = json.dumps(payload, ensure_ascii=False)
+        runner = self._require_runner()
+        session_type = self._resolve_session_type(send_meta, group_id=group_id)
+        ok = await asyncio.to_thread(
+            runner.send_custom_sync,
+            recv_id,
+            data_str,
+            description=kind,
+            extension="",
+            group_id=group_id,
+            session_type=session_type,
+        )
+        if not ok:
+            logger.warning("openim %s card send failed", kind)
+            return False
+        return True
+
+    def _build_runtime_card_data(
+        self,
+        event: Any,
+        *,
+        kind: str,
+        display: ChannelDisplayConfig,
+    ) -> Dict[str, Any] | None:
+        content = getattr(event, "content", None) or []
+        if not isinstance(content, list):
+            content = []
+
+        if kind == "thinking":
+            text = self._extract_thinking_text(content)
+            if not text.strip():
+                text = self._extract_event_text(event)
+            text = (text or "").strip()
+            if not text:
+                return None
+            max_len = max(int(display.tool_result_max_length or 0), 500)
+            if max_len > 0 and len(text) > max_len:
+                text = text[:max_len] + "..."
+            return {"kind": kind, "text": text}
+
+        tool_name = "tool"
+        body = ""
+        for item in content:
+            data = getattr(item, "data", None)
+            if data is None and isinstance(item, dict):
+                data = item.get("data")
+            if not isinstance(data, dict):
+                continue
+            tool_name = str(data.get("name") or tool_name)
+            if kind == "tool_call":
+                raw = data.get("arguments")
+            else:
+                raw = data.get("output")
+            if raw is None:
+                continue
+            if isinstance(raw, (dict, list)):
+                body = json.dumps(raw, ensure_ascii=False, indent=2)
+            else:
+                body = str(raw)
+            break
+
+        if not body and kind == "tool_result":
+            # 某些结果把文本放在 content text 块里
+            body = self._extract_event_text(event)
+
+        limit = (
+            display.tool_call_max_length
+            if kind == "tool_call"
+            else display.tool_result_max_length
+        )
+        if not display.show_tool_details:
+            body = "..."
+        elif limit > 0 and len(body) > limit:
+            body = body[:limit] + "..."
+
+        return {
+            "kind": kind,
+            "toolName": tool_name,
+            "body": body,
+        }
+
+    @staticmethod
+    def _extract_thinking_text(content: list) -> str:
+        parts: List[str] = []
+        for item in content:
+            if isinstance(item, dict):
+                if item.get("type") == "thinking" and item.get("thinking"):
+                    parts.append(str(item["thinking"]))
+                elif item.get("type") == "text" and item.get("text"):
+                    parts.append(str(item["text"]))
+                continue
+            text = getattr(item, "text", None)
+            if text:
+                parts.append(str(text))
+                continue
+            thinking = getattr(item, "thinking", None)
+            if thinking:
+                parts.append(str(thinking))
+        return "\n".join(p for p in parts if p).strip()
+
+    async def _try_send_approval_card(
+        self,
+        to_handle: str,
+        event: Any,
+        send_meta: Dict[str, Any],
+    ) -> bool:
+        """将 tool_guard_approval 事件发为 App 可渲染的 custom 消息。"""
+        meta = self._unwrap_event_metadata(event)
+        if not meta or meta.get("message_type") != "tool_guard_approval":
+            return False
+        request_id = str(meta.get("approval_request_id") or "").strip()
+        if not request_id:
+            return False
+        if not self.enabled:
+            return False
+
+        recv_id, group_id = self._resolve_send_target(to_handle, send_meta)
+        if not recv_id and not group_id:
+            logger.warning(
+                "openim approval card: missing target to_handle=%s",
+                (to_handle or "")[:50],
+            )
+            return False
+
+        summary = self._extract_event_text(event)
+        tool_params = meta.get("tool_params")
+        if not isinstance(tool_params, dict):
+            tool_params = {}
+        payload = {
+            "customType": CUSTOM_TYPE_TOOL_GUARD_APPROVAL,
+            "data": {
+                "requestId": request_id,
+                "toolName": str(meta.get("tool_name") or "tool"),
+                "toolSource": str(meta.get("tool_source") or ""),
+                "severity": str(meta.get("severity") or "medium"),
+                "findingsCount": int(meta.get("findings_count") or 0),
+                "summary": summary,
+                "toolParams": tool_params,
+                "createdAt": float(meta.get("created_at") or 0.0),
+                "timeoutSeconds": float(meta.get("timeout_seconds") or 300.0),
+                "isGeneralized": bool(meta.get("is_generalized")),
+                "exactTarget": str(meta.get("exact_target") or ""),
+                "similarTarget": str(meta.get("similar_target") or ""),
+                "status": "pending",
+            },
+        }
+        data_str = json.dumps(payload, ensure_ascii=False)
+        runner = self._require_runner()
+        session_type = self._resolve_session_type(send_meta, group_id=group_id)
+        ok = await asyncio.to_thread(
+            runner.send_custom_sync,
+            recv_id,
+            data_str,
+            description="tool_guard_approval",
+            extension="",
+            group_id=group_id,
+            session_type=session_type,
+        )
+        if not ok:
+            logger.warning(
+                "openim approval card send failed: request_id=%s",
+                request_id[:8],
+            )
+            return False
+        logger.info(
+            "openim approval card sent: request_id=%s tool=%s",
+            request_id[:8],
+            meta.get("tool_name"),
+        )
+        return True
+
+    @staticmethod
+    def _unwrap_event_metadata(event: Any) -> Dict[str, Any] | None:
+        metadata = getattr(event, "metadata", None) or {}
+        if not isinstance(metadata, dict):
+            return None
+        inner = metadata.get("metadata")
+        meta = inner if isinstance(inner, dict) else metadata
+        return meta if isinstance(meta, dict) else None
+
+    @staticmethod
+    def _extract_event_text(event: Any) -> str:
+        content = getattr(event, "content", None)
+        if not content:
+            return ""
+        if isinstance(content, str):
+            return content
+        if not isinstance(content, list):
+            return ""
+        parts: List[str] = []
+        for item in content:
+            text = getattr(item, "text", None)
+            if text:
+                parts.append(str(text))
+            elif isinstance(item, dict) and item.get("type") == "text":
+                parts.append(str(item.get("text") or ""))
+        return "".join(parts)
 
     async def send_content_parts(
         self,

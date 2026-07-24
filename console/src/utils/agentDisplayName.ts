@@ -6,6 +6,7 @@ export const DEFAULT_AGENT_ID = "default";
 export const DEFAULT_AGENT_DISPLAY_NAME = "Default Agent";
 const DEFAULT_AGENT_PLACEHOLDER_NAMES = new Set([
   DEFAULT_AGENT_DISPLAY_NAME,
+  "Default",
   "Dr.Claw",
 ]);
 

@@ -460,7 +460,11 @@ class MessageRenderer:
                             ),
                         )
         if not result and msg_type and not suppressed_tool_data:
-            result = [TextContent(text=f"[Message type: {msg_type}]")]
+            # 空 MESSAGE 不再下发调试占位文案（否则 OpenIM/App 会显示
+            # 「[Message type: MessageType.MESSAGE]」）。工具类消息已在上方
+            # 分支处理；此处直接跳过，由 channel 的 no-parts 逻辑不发送。
+            if msg_type != MessageType.MESSAGE:
+                result = [TextContent(text=f"[Message type: {msg_type}]")]
         return result
 
     def parts_to_text(

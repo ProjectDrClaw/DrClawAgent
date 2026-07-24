@@ -90,15 +90,17 @@ function ChannelsPage() {
       const accessControlGroup =
         channelConfig.access_control_group ||
         channelConfig.group_policy === "allowlist";
+      const isOpenIM = key === "openim";
+      const quietDefault = isOpenIM ? false : true;
       form.setFieldsValue({
         ...channelConfig,
         access_control_dm: accessControlDm,
         access_control_group: accessControlGroup,
-        show_tool_calls: channelConfig.show_tool_calls ?? true,
-        show_tool_results: channelConfig.show_tool_results ?? true,
+        show_tool_calls: channelConfig.show_tool_calls ?? quietDefault,
+        show_tool_results: channelConfig.show_tool_results ?? quietDefault,
         tool_call_max_length: channelConfig.tool_call_max_length ?? 200,
         tool_result_max_length: channelConfig.tool_result_max_length ?? 500,
-        show_thinking: channelConfig.show_thinking ?? true,
+        show_thinking: channelConfig.show_thinking ?? quietDefault,
       });
     },
     [channels, form],

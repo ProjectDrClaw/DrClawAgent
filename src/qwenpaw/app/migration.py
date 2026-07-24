@@ -636,6 +636,56 @@ def _ensure_workspace_json_files(
                 logger.debug("Created %s for %s", filename, label)
 
 
+def _migrate_legacy_default_agent_display_name(default_workspace: Path) -> None:
+    """把遗留占位显示名 Default / Default Agent 升级为 Dr.Claw。"""
+    agent_config_path = default_workspace / "agent.json"
+    if not agent_config_path.is_file():
+        return
+    try:
+        with open(agent_config_path, encoding="utf-8") as f:
+            payload = json.load(f)
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning(
+            "Skip default agent name migration; cannot read %s: %s",
+            agent_config_path,
+            exc,
+        )
+        return
+    if not isinstance(payload, dict):
+        return
+
+    legacy_names = {"Default", "Default Agent", ""}
+    legacy_descriptions = {"default agent", "Default agent", ""}
+    name = payload.get("name")
+    description = payload.get("description")
+    changed = False
+    if isinstance(name, str) and name in legacy_names:
+        payload["name"] = _DEFAULT_AGENT_NAME
+        changed = True
+    if isinstance(description, str) and description in legacy_descriptions:
+        payload["description"] = _DEFAULT_AGENT_DESCRIPTION
+        changed = True
+    if not changed:
+        return
+
+    try:
+        tmp_path = default_workspace / "agent.json.tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        tmp_path.replace(agent_config_path)
+        logger.info(
+            "Migrated default agent display name to %s (%s)",
+            _DEFAULT_AGENT_NAME,
+            agent_config_path,
+        )
+    except OSError as exc:
+        logger.warning(
+            "Failed to migrate default agent display name: %s",
+            exc,
+        )
+
+
 def ensure_default_agent_exists() -> None:
     """Ensure that the default agent exists in config.
 
@@ -672,6 +722,10 @@ def _do_ensure_default_agent() -> None:
     default_workspace.mkdir(parents=True, exist_ok=True)
 
     _ensure_workspace_json_files(default_workspace, "default agent")
+
+    # 遗留占位名 Default / Default Agent → Dr.Claw
+    if agent_existed:
+        _migrate_legacy_default_agent_display_name(default_workspace)
 
     # Only update config if agent didn't exist
     if not agent_existed:

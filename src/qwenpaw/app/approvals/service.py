@@ -125,14 +125,35 @@ class ApprovalService:
                 if is_spawn_child
                 else pending.session_id
             )
+            from .display import approval_display_fields
+
+            display = approval_display_fields(pending)
+            tool_call = (pending.extra or {}).get("tool_call") or {}
+            tool_params = (
+                tool_call.get("input")
+                if isinstance(tool_call, dict)
+                else {}
+            )
+            if not isinstance(tool_params, dict):
+                tool_params = {}
             await channel_instance.send_approval_notification(
                 session_id=delivery_session_id,
                 user_id=pending.user_id,
                 request_id=pending.request_id,
-                tool_name=pending.tool_name,
+                tool_name=str(
+                    display.get("tool_display_name") or pending.tool_name,
+                ),
                 severity=pending.severity,
                 result_summary=channel_body,
                 channel_meta=channel_meta,
+                tool_source=str(display.get("tool_source") or ""),
+                findings_count=int(pending.findings_count or 0),
+                tool_params=tool_params,
+                created_at=float(pending.created_at or 0.0),
+                timeout_seconds=float(pending.timeout_seconds or 300.0),
+                is_generalized=bool(display.get("is_generalized")),
+                exact_target=str(display.get("exact_target") or ""),
+                similar_target=str(display.get("similar_target") or ""),
             )
         except Exception:
             logger.warning(

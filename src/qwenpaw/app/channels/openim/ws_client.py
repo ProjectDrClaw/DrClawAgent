@@ -11,6 +11,7 @@ from typing import Any, Callable, Optional
 
 from .client import ws_gateway_addr
 from .constants import (
+    CONTENT_TYPE_CUSTOM,
     INBOUND_CONTENT_TYPES,
     SESSION_TYPE_DM,
     WS_BACKOFF_FACTOR,
@@ -370,6 +371,48 @@ class OpenIMWSRunner:
                 session_type=session_type,
             ),
         )
+
+    def send_custom_sync(
+        self,
+        recv_id: str,
+        data: str,
+        *,
+        description: str = "",
+        extension: str = "",
+        group_id: str = "",
+        session_type: int | None = None,
+    ) -> bool:
+        """发送 OpenIM custom 消息（contentType=110）。
+
+        SDK 未封装 send_custom，直接走 ``_send_content``。
+        ``data`` 为 App 约定的 JSON 字符串（含 customType）。
+        """
+        if not self.is_connected:
+            return False
+        with self._sdk_lock:
+            sdk = self._sdk
+        if sdk is None or not hasattr(sdk, "_send_content"):
+            return False
+        payload = {
+            "data": data or "",
+            "description": description or "",
+            "extension": extension or "",
+        }
+        with self._send_lock:
+            try:
+                ack = sdk._send_content(  # pylint: disable=protected-access
+                    content_type=CONTENT_TYPE_CUSTOM,
+                    content_payload=payload,
+                    recv_id=recv_id or "",
+                    group_id=group_id or "",
+                    session_type=session_type,
+                    sender_platform_id=None,
+                    ex="",
+                )
+            except Exception:
+                logger.exception("openim ws send_custom failed")
+                return False
+        return self._ack_ok(ack)
 
     def send_image_sync(
         self,

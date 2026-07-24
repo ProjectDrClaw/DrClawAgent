@@ -2071,6 +2071,14 @@ class BaseChannel(ABC):
         severity: str,
         result_summary: str,
         channel_meta: Optional[Dict[str, Any]] = None,
+        tool_source: str = "",
+        findings_count: int = 0,
+        tool_params: Optional[Dict[str, Any]] = None,
+        created_at: float = 0.0,
+        timeout_seconds: float = 300.0,
+        is_generalized: bool = False,
+        exact_target: str = "",
+        similar_target: str = "",
     ) -> None:
         """Push a tool-guard approval notification.
 
@@ -2104,6 +2112,14 @@ class BaseChannel(ABC):
                     "approval_request_id": request_id,
                     "tool_name": tool_name,
                     "severity": severity,
+                    "tool_source": tool_source,
+                    "findings_count": findings_count,
+                    "tool_params": dict(tool_params or {}),
+                    "created_at": created_at,
+                    "timeout_seconds": timeout_seconds,
+                    "is_generalized": is_generalized,
+                    "exact_target": exact_target,
+                    "similar_target": similar_target,
                 },
             },
             content=[

@@ -189,9 +189,16 @@ class TestMessageToParts:
         assert len(refusals) == 1
         assert refusals[0].refusal == "no"
 
-    def test_empty_content_with_msg_type_returns_placeholder(self):
+    def test_empty_message_content_skips_placeholder(self):
+        """空 MESSAGE 不应下发调试占位，避免 IM/App 出现脏气泡。"""
         r = MessageRenderer()
         msg = _mk_message([])
+        assert r.message_to_parts(msg) == []
+
+    def test_empty_unknown_type_still_returns_placeholder(self):
+        r = MessageRenderer()
+        msg = _mk_message([], MessageType.REASONING)
+        # show_thinking 默认 True，但 content 为空时保留类型占位便于排查
         parts = r.message_to_parts(msg)
         assert len(parts) == 1
         assert parts[0].text.startswith("[Message type:")

@@ -293,8 +293,16 @@ class OpenIMConfig(BaseChannelConfig):
     app_secret: sealed 32-char App Secret or plain OpenIM secret.
     share_session_in_group: if True, all group members share one session;
     if False (default), each member gets an independent session.
+
+    App 对话默认不推送工具调用 / 工具结果 / 思考过程，只保留最终回复；
+    可在 Console 频道设置中重新打开。
     """
 
+    model_config = ConfigDict(extra="allow")
+
+    show_tool_calls: bool = False
+    show_tool_results: bool = False
+    show_thinking: bool = False
     api_url: str = ""
     app_id: str = ""
     app_secret: str = ""
@@ -2555,6 +2563,9 @@ def migrate_channel_display_fields(channels: object) -> bool:
     Only translates the legacy boolean flags into their replacements; the
     remaining fields fall back to the model defaults, so channels without
     legacy settings are left untouched (no spurious config rewrite).
+
+    Also applies Dr.Claw OpenIM product defaults once: tool/thinking
+    messages off in App chat unless the user already customized them.
     """
     if not isinstance(channels, dict):
         return False
@@ -2571,6 +2582,17 @@ def migrate_channel_display_fields(channels: object) -> bool:
         if legacy_thinking is not None:
             channel_cfg.setdefault("show_thinking", not bool(legacy_thinking))
             migrated = True
+
+    openim_cfg = channels.get("openim")
+    if isinstance(openim_cfg, dict) and not openim_cfg.get(
+        "_drclaw_openim_quiet_display",
+    ):
+        # 一次性：把旧默认 True 收成 OpenIM 产品默认 False
+        openim_cfg["show_tool_calls"] = False
+        openim_cfg["show_tool_results"] = False
+        openim_cfg["show_thinking"] = False
+        openim_cfg["_drclaw_openim_quiet_display"] = True
+        migrated = True
     return migrated
 
 
