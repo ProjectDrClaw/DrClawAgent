@@ -996,11 +996,6 @@ def test_reorder_partial_list_rejected(app_server) -> None:
     - PUT /api/agents/order
     - DELETE /api/agents/{agentId}
     """
-    from tests.integration.helpers import (
-        create_agent,
-        delete_agent_quietly,
-    )
-
     temp_id = "integ_ma_partial_order_01"
     try:
         create_agent(app_server, temp_id)
@@ -1011,9 +1006,9 @@ def test_reorder_partial_list_rejected(app_server) -> None:
         )
         assert list_resp.status_code == 200, app_server.logs_tail()
         all_ids = [a["id"] for a in list_resp.json().get("agents", [])]
-        assert len(all_ids) >= 2, (
-            f"expected >=2 agents after create, got {all_ids}"
-        )
+        assert (
+            len(all_ids) >= 2
+        ), f"expected >=2 agents after create, got {all_ids}"
 
         partial = all_ids[:1]
         resp = app_server.api_request(

@@ -5,7 +5,11 @@ from __future__ import annotations
 
 import pytest
 
-from tests.integration.helpers import wait_for_agent_startup
+from tests.integration.helpers import (
+    create_agent,
+    delete_agent_quietly,
+    wait_for_agent_startup,
+)
 
 _AGENT_PROFILE_TOP_LEVEL_KEYS = (
     "channels",
@@ -176,11 +180,6 @@ def test_api_agents_order_put_roundtrip(app_server) -> None:
     - PUT /api/agents/order
     - DELETE /api/agents/{agentId}
     """
-    from tests.integration.helpers import (
-        create_agent,
-        delete_agent_quietly,
-    )
-
     temp_a = "integ_agents_order_a"
     temp_b = "integ_agents_order_b"
     created: list[str] = []
@@ -202,9 +201,9 @@ def test_api_agents_order_put_roundtrip(app_server) -> None:
             for item in agents_before
             if item["id"] != "default" and not item.get("pinned", False)
         ]
-        assert len(regular_ids) >= 2, (
-            f"expected >=2 unpinned agents after create, got {regular_ids}"
-        )
+        assert (
+            len(regular_ids) >= 2
+        ), f"expected >=2 unpinned agents after create, got {regular_ids}"
 
         first_regular = baseline_ids.index(regular_ids[0])
         reordered_ids = list(baseline_ids)
@@ -269,12 +268,12 @@ def test_api_agent_patch_toggle_enabled_roundtrip(app_server) -> None:
                 return bool(row.get("enabled", True))
         return None
 
-    create_agent = app_server.api_request(
+    create_resp = app_server.api_request(
         "POST",
         "/api/agents",
         json={"id": agent_id, "name": "Toggle agent", "description": ""},
     )
-    assert create_agent.status_code == 201, app_server.logs_tail()
+    assert create_resp.status_code == 201, app_server.logs_tail()
     assert wait_for_agent_startup(app_server, agent_id) == "running"
 
     try:
