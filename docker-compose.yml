@@ -15,13 +15,12 @@ services:
       - TZ=Asia/Shanghai
       - DRCLAW_AUTH_ENABLED=true
     volumes:
-      - ./drclaw-data:/app/working
-      - ./drclaw-secrets:/app/working.secret
-      - ./drclaw-backups:/app/working.backups
+      - ./drclaw/data:/app/working
+      - ./drclaw/secrets:/app/working.secret
+      - ./drclaw/backups:/app/working.backups
     networks:
       - drclaw-net
 
-  # 可选：在 Console「设置 → 语音转写」选 Whisper API，并把提供商指向本服务
   sensevoice:
     image: ${REGISTRY:-ghcr.io/projectdrclaw}/sensevoice:cpu
     container_name: drclaw-sensevoice
