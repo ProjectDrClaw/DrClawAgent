@@ -21,7 +21,7 @@ from typing import (
 from .base import BaseChannel, ContentType, ProcessHandler, TextContent
 from .renderer import ChannelDisplayConfig
 from .command_registry import CommandRegistry
-from .registry import get_channel_registry
+from .registry import get_channel_class, list_channel_keys
 from .unified_queue_manager import UnifiedQueueManager
 from ...config import get_available_channels
 
@@ -102,13 +102,17 @@ class ChannelManager:
         process is typically workspace.stream_query.
         on_last_dispatch: called when a user send+reply was sent.
         """
-        available = get_available_channels()
-        registry = get_channel_registry()
-        channels: list[BaseChannel] = [
-            ch_cls.from_env(process, on_reply_sent=on_last_dispatch)
-            for key, ch_cls in registry.items()
-            if key in available
-        ]
+        available = set(get_available_channels())
+        channels: list[BaseChannel] = []
+        for key in list_channel_keys():
+            if key not in available:
+                continue
+            ch_cls = get_channel_class(key)
+            if ch_cls is None:
+                continue
+            channels.append(
+                ch_cls.from_env(process, on_reply_sent=on_last_dispatch),
+            )
         return cls(channels)
 
     @classmethod
@@ -128,13 +132,14 @@ class ChannelManager:
             on_last_dispatch: Callback for dispatch events
             workspace_dir: Agent workspace directory for channel state files
         """
-        available = get_available_channels()
+        available = set(get_available_channels())
         ch = config.channels
         show_tool_details = getattr(config, "show_tool_details", True)
         extra = getattr(ch, "__pydantic_extra__", None) or {}
 
         channels: list[BaseChannel] = []
-        for key, ch_cls in get_channel_registry().items():
+        # 仅对「可用且 enabled」的频道 import 模块，避免启动时同步加载全部重依赖
+        for key in list_channel_keys():
             if key not in available:
                 continue
             ch_cfg = getattr(ch, key, None)
@@ -158,6 +163,10 @@ class ChannelManager:
             else:
                 enabled = getattr(ch_cfg, "enabled", False)
             if not enabled:
+                continue
+
+            ch_cls = get_channel_class(key)
+            if ch_cls is None:
                 continue
 
             no_text_debounce = getattr(ch_cfg, "no_text_debounce", True)

@@ -655,7 +655,7 @@ class MultiAgentManager:
         Only agents with enabled=True will be started.
         Disabled agents are skipped to save resources.
 
-        The default and built-in QA agents form the concurrent core phase.
+        The default agent forms the concurrent core phase.
         Remaining custom agents start only after that phase and are bounded
         by ``QWENPAW_CUSTOM_AGENT_STARTUP_CONCURRENCY``.
 

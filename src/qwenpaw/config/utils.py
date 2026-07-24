@@ -392,10 +392,10 @@ def get_available_channels() -> Tuple[str, ...]:
     * If both are set, QWENPAW_ENABLED_CHANNELS takes precedence.
     * If neither is set, all discovered channels are returned.
     """
-    from ..app.channels.registry import get_channel_registry
+    from ..app.channels.registry import list_channel_keys
 
-    registry = get_channel_registry()
-    all_keys = tuple(registry.keys())
+    # 只列举 key，不 import 频道模块（避免启动/配置路径被重依赖拖慢）
+    all_keys = list_channel_keys()
 
     raw_enabled = EnvVarLoader.get_str("QWENPAW_ENABLED_CHANNELS", "").strip()
     if raw_enabled:
