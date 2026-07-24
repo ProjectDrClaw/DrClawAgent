@@ -452,11 +452,3 @@ jobs:
       ref: ${{ needs.resolve.outputs.sha }}
       dry_run: ${{ inputs.dry_run }}
     secrets: inherit
-
-  # ── Post-publish: create the Release Duty verification issue (inline) ───────
-  duty-issue:
-    needs: [resolve, finalize]
-    uses: ./.github/workflows/release-duty.yml
-    with:
-      tag: ${{ needs.resolve.outputs.tag }}
-    secrets: inherit
