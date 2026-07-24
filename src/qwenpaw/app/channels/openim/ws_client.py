@@ -131,7 +131,9 @@ def _normalize_content_obj(content_obj: Any) -> Any:
                 at_users_info.append(
                     {
                         "atUserID": str(
-                            info.get("atUserID") or info.get("at_user_id") or "",
+                            info.get("atUserID")
+                            or info.get("at_user_id")
+                            or "",
                         ),
                         "groupNickname": str(
                             info.get("groupNickname")
@@ -582,12 +584,8 @@ class OpenIMWSRunner:
         return True
 
     def _mark_connected(self) -> None:
-        was_reconnect = (
-            self._ever_connected
-            and (
-                self._disconnected_since is not None
-                or not self._login_ok
-            )
+        was_reconnect = self._ever_connected and (
+            self._disconnected_since is not None or not self._login_ok
         )
         self._login_ok = True
         self._kicked = False
@@ -637,7 +635,10 @@ class OpenIMWSRunner:
                         detail,
                     )
                 return
-            if now - self._last_disconnect_log_at >= WS_DISCONNECT_WARN_INTERVAL_S:
+            if (
+                now - self._last_disconnect_log_at
+                >= WS_DISCONNECT_WARN_INTERVAL_S
+            ):
                 self._last_disconnect_log_at = now
                 down_for = now - (self._disconnected_since or now)
                 logger.warning(
@@ -756,9 +757,7 @@ class OpenIMWSRunner:
                     if (
                         self._disconnected_since is not None
                         and not self.is_connected
-                        and (
-                            time.time() - self._disconnected_since
-                        )
+                        and (time.time() - self._disconnected_since)
                         >= WS_STALE_DISCONNECT_S
                     ):
                         logger.info(

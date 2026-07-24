@@ -101,7 +101,9 @@ def get_builtin_skill_language_preference() -> str:
             result = explicit
         else:
             # 与 /settings/language 默认 zh 对齐：未配置 UI 语言时用中文技能包
-            ui_lang = str(payload.get("language", "zh") or "zh").strip().lower()
+            ui_lang = (
+                str(payload.get("language", "zh") or "zh").strip().lower()
+            )
             result = "zh" if ui_lang.startswith("zh") else "en"
         _builtin_cache["language_preference"] = result
         return result

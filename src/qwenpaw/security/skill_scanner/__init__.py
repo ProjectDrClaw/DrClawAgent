@@ -189,9 +189,7 @@ def _get_blocked_history_path() -> Path:
             legacy_dir = Path.home() / legacy_name
             if legacy_dir.exists():
                 return legacy_dir / _BLOCKED_HISTORY_FILE
-        return (
-            Path.home() / _WORKING_DIR_CURRENT_NAME / _BLOCKED_HISTORY_FILE
-        )
+        return Path.home() / _WORKING_DIR_CURRENT_NAME / _BLOCKED_HISTORY_FILE
 
 
 @dataclass

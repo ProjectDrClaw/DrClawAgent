@@ -710,9 +710,7 @@ class MultiAgentManager:
                 return (agent_id, False)
 
         core_agent_ids = [
-            agent_id
-            for agent_id in ("default",)
-            if agent_id in enabled_agents
+            agent_id for agent_id in ("default",) if agent_id in enabled_agents
         ]
         custom_agent_ids = [
             agent_id

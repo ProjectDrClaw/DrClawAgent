@@ -83,7 +83,11 @@ class TestProcessAudioWritesTypedBlocks:
     """语音处理后 Msg.content 必须是 TextBlock/DataBlock，不能是裸 dict。"""
 
     @pytest.mark.asyncio
-    async def test_auto_transcription_writes_text_block(self, tmp_path, monkeypatch):
+    async def test_auto_transcription_writes_text_block(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
         from agentscope.message import Msg, DataBlock
         from agentscope.message._block import URLSource
 
@@ -95,7 +99,9 @@ class TestProcessAudioWritesTypedBlocks:
         monkeypatch.setattr(
             mp,
             "load_config",
-            lambda: MagicMock(agents=MagicMock(audio_mode="auto", language="zh")),
+            lambda: MagicMock(
+                agents=MagicMock(audio_mode="auto", language="zh"),
+            ),
         )
 
         async def _fake_transcribe(_path):
@@ -127,7 +133,6 @@ class TestProcessAudioWritesTypedBlocks:
         assert "你好医生" in (getattr(first, "text", "") or "")
         # agentscope get_text_content 不应再因 dict 崩溃
         assert msg.get_text_content() is not None
-
 
 
 class TestPrependToMessageContent:

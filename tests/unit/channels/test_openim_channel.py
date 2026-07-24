@@ -31,7 +31,10 @@ from qwenpaw.app.channels.openim.constants import (
     CONTENT_TYPE_TEXT,
     CONTENT_TYPE_VIDEO,
 )
-from qwenpaw.app.channels.openim.ws_client import OpenIMWSRunner, normalize_ws_message
+from qwenpaw.app.channels.openim.ws_client import (
+    OpenIMWSRunner,
+    normalize_ws_message,
+)
 from qwenpaw.exceptions import ChannelError
 
 
@@ -435,10 +438,12 @@ class TestEnqueue:
         captured: list[Any] = []
         ch.set_enqueue(captured.append)
 
-        def _no_download(url, msg_id="", video_type=""):
+        def _no_download(_url, _msg_id="", _video_type=""):
             return None
 
-        ch._download_video_to_local = _no_download  # type: ignore[method-assign]
+        ch._download_video_to_local = (  # type: ignore[method-assign]
+            _no_download
+        )
         assert ch.enqueue_inbound(
             {
                 "sendID": "user1",
@@ -463,7 +468,7 @@ class TestEnqueue:
         local.parent.mkdir(parents=True, exist_ok=True)
         local.write_bytes(b"voice-bytes")
 
-        def _fake_download(url, msg_id="", sound_type=""):
+        def _fake_download(url, _msg_id="", _sound_type=""):
             assert url.startswith("https://")
             return str(local)
 
@@ -496,7 +501,7 @@ class TestEnqueue:
         local.parent.mkdir(parents=True, exist_ok=True)
         local.write_bytes(b"video-bytes")
 
-        def _fake_download(url, msg_id="", video_type=""):
+        def _fake_download(url, _msg_id="", _video_type=""):
             assert url.startswith("https://")
             return str(local)
 
@@ -551,11 +556,11 @@ class TestEnqueue:
 
         def _fake_download(
             url,
-            msg_id="",
+            _msg_id="",
             kind="media",
-            type_hint="",
-            default_ext="bin",
-            filename_hint="",
+            _type_hint="",
+            _default_ext="bin",
+            _filename_hint="",
         ):
             assert url.startswith("https://")
             assert kind == "file"
@@ -867,7 +872,10 @@ class TestSilentReconnectLogging:
 
         runner = self._runner(tmp_path)
         runner._ever_connected = True
-        with caplog.at_level(logging.DEBUG, logger="qwenpaw.app.channels.openim.ws_client"):
+        with caplog.at_level(
+            logging.DEBUG,
+            logger="qwenpaw.app.channels.openim.ws_client",
+        ):
             runner._mark_disconnected("net down")
             runner._log_disconnect_event("connect_failed", "net down")
         assert any(
@@ -878,7 +886,11 @@ class TestSilentReconnectLogging:
             for r in caplog.records
         )
 
-    def test_repeat_disconnect_is_debug_within_interval(self, tmp_path, caplog):
+    def test_repeat_disconnect_is_debug_within_interval(
+        self,
+        tmp_path,
+        caplog,
+    ):
         import logging
         import time
 
@@ -887,7 +899,10 @@ class TestSilentReconnectLogging:
         now = time.time()
         runner._disconnected_since = now
         runner._last_disconnect_log_at = now  # 刚记过首断
-        with caplog.at_level(logging.DEBUG, logger="qwenpaw.app.channels.openim.ws_client"):
+        with caplog.at_level(
+            logging.DEBUG,
+            logger="qwenpaw.app.channels.openim.ws_client",
+        ):
             runner._log_disconnect_event("sdk_error", "again")
         assert any(r.levelno == logging.DEBUG for r in caplog.records)
         assert not any(r.levelno >= logging.WARNING for r in caplog.records)
@@ -899,7 +914,10 @@ class TestSilentReconnectLogging:
         runner._ever_connected = True
         runner._disconnected_since = 1.0
         runner._login_ok = False
-        with caplog.at_level(logging.INFO, logger="qwenpaw.app.channels.openim.ws_client"):
+        with caplog.at_level(
+            logging.INFO,
+            logger="qwenpaw.app.channels.openim.ws_client",
+        ):
             runner._mark_connected()
         assert any("reconnected" in r.message for r in caplog.records)
         assert runner.is_connected

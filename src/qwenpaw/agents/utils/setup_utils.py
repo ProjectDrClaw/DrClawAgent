@@ -255,4 +255,3 @@ def copy_workspace_md_files(
         ),
     )
     return copied_files
-

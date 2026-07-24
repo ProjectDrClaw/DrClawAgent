@@ -342,7 +342,9 @@ def is_auth_enabled() -> bool:
     The presence of a registered user is checked separately by the
     middleware so that the first user can still reach the registration page.
     """
-    env_flag = EnvVarLoader.get_str("DRCLAW_AUTH_ENABLED", "true").strip().lower()
+    env_flag = (
+        EnvVarLoader.get_str("DRCLAW_AUTH_ENABLED", "true").strip().lower()
+    )
     return env_flag in ("true", "1", "yes")
 
 

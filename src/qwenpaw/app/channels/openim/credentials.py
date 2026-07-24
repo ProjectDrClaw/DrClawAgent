@@ -148,7 +148,10 @@ def _resolve_encoded_app_id(app_id: str) -> str:
         return normalize_app_id(raw) or raw
 
 
-def _seal_key_material(encoded_app_id: str, pepper: str) -> Tuple[bytes, bytes]:
+def _seal_key_material(
+    encoded_app_id: str,
+    pepper: str,
+) -> Tuple[bytes, bytes]:
     key = hmac.new(
         pepper.encode("utf-8"),
         encoded_app_id.encode("utf-8"),
@@ -249,7 +252,9 @@ def open_app_secret(
     ct, tag = blob[:_SEAL_BODY_LEN], blob[_SEAL_BODY_LEN:]
     expect = hmac.new(key, nonce + ct, hashlib.sha256).digest()[:_SEAL_TAG_LEN]
     if not hmac.compare_digest(tag, expect):
-        raise SecretSealError("App Secret MAC mismatch (wrong App ID or corrupt)")
+        raise SecretSealError(
+            "App Secret MAC mismatch (wrong App ID or corrupt)",
+        )
     body = _xor_bytes(ct, _hmac_keystream(key, nonce, len(ct)))
     length = body[0]
     if length > _PLAIN_SECRET_MAX_BYTES:
@@ -356,7 +361,7 @@ def verify_app_secret(
 def credentials_format_report(
     app_id: str,
     app_secret: str,
-) -> dict[str, bool | str]:
+) -> dict[str, bool | str | int]:
     raw = (app_id or "").strip()
     secret = (app_secret or "").strip()
     openim_uid = ""

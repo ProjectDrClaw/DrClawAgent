@@ -235,9 +235,8 @@ def _update_block_with_local_path(
         "file": "application/octet-stream",
     }.get(block_type, "application/octet-stream")
     media_type = (
-        (src.get("media_type") if isinstance(src, dict) else None)
-        or _guess_media_type(block_type, local_path, fallback_mt)
-    )
+        src.get("media_type") if isinstance(src, dict) else None
+    ) or _guess_media_type(block_type, local_path, fallback_mt)
 
     # 同步更新 dict，供后续 audio 管线读取
     if block_type == "file":
@@ -558,19 +557,17 @@ async def process_file_and_media_blocks_in_message(msg) -> None:
                     # image 远程也可由此兜底；本地 file:// 走下方分支
                     if not url.startswith("file://"):
                         block_dict = {
-                            "type": (
-                                "image"
-                                if major == "image"
-                                else "file"
-                            ),
+                            "type": ("image" if major == "image" else "file"),
                             "source": {
                                 "type": "url",
                                 "url": url,
                                 "media_type": media_type
                                 or "application/octet-stream",
                             },
-                            "filename": getattr(block, "name", None),
                         }
+                        name = getattr(block, "name", None)
+                        if isinstance(name, str) and name:
+                            block_dict["filename"] = name
                         local_path = await _process_single_block(
                             message.content,
                             i,

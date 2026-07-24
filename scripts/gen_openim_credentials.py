@@ -27,9 +27,7 @@ APP_ID_PREFIX = "cli_"
 APP_ID_HEX_LEN = 16
 APP_SECRET_LEN = 32
 APP_SECRET_ALPHABET = (
-    "abcdefghijklmnopqrstuvwxyz"
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "0123456789"
+    "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789"
 )
 PLAIN_SECRET_MAX_BYTES = 18
 SEAL_BODY_LEN = 19
@@ -180,8 +178,7 @@ def seal_credentials(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "OpenIM userID + 明文 Secret → App ID / App Secret"
-            "（纯标准库，可独立运行）"
+            "OpenIM userID + 明文 Secret → App ID / App Secret" "（纯标准库，可独立运行）"
         ),
     )
     parser.add_argument("user_id", help="OpenIM 数字 userID，如 6208248507")

@@ -217,7 +217,10 @@ class _MCPClientMixin:
 
         logger.info(f"MCP client lifecycle task exited: {self.name}")
 
-    async def connect(self, timeout: float = MCP_CONNECT_TIMEOUT_SECONDS) -> None:
+    async def connect(
+        self,
+        timeout: float = MCP_CONNECT_TIMEOUT_SECONDS,
+    ) -> None:
         """Connect to the MCP server.
 
         Starts the background lifecycle task and waits until the first

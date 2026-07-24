@@ -726,7 +726,7 @@ class OpenIMChannel(BaseChannel):
             if not isinstance(url, str) or not url.strip():
                 out.append(part)
                 continue
-            local = self._download_video_to_local(
+            local: Optional[str] = self._download_video_to_local(
                 url.strip(),
                 msg_id=msg_id,
                 video_type=video_type,

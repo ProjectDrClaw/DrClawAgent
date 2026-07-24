@@ -1,6 +1,6 @@
 # Dr.Claw 定制说明
 
-> 本文描述 **DrClawAgent** 相对上游 QwenPaw 已落地的品牌与私有化能力。  
+> 本文描述 **DrClawAgent** 相对上游 QwenPaw 已落地的品牌与私有化能力。
 > 配套工程：`DrClawApp`（Flutter + OpenIM）、`DrClawBusiness`（业务中心）。
 
 相关文档：
