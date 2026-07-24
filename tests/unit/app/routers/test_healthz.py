@@ -52,7 +52,7 @@ class TestHealthzReady:
         mgr = MagicMock()
         mgr.list_loaded_agents.return_value = [
             "default",
-            "qa",
+            "extra",
         ]
         app.state.multi_agent_manager = mgr
 
@@ -60,7 +60,7 @@ class TestHealthzReady:
         assert resp.status_code == 200
         body = resp.json()
         assert body["status"] == "ok"
-        assert body["agents_loaded"] == ["default", "qa"]
+        assert body["agents_loaded"] == ["default", "extra"]
         assert isinstance(body["uptime_seconds"], float)
         assert body["uptime_seconds"] >= 10
 

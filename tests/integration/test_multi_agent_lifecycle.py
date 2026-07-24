@@ -983,31 +983,48 @@ def test_reorder_partial_list_rejected(app_server) -> None:
       is rejected.
 
     Test flow:
-    1. GET /api/agents to get full list.
-    2. PUT /api/agents/order with only a subset of ids.
-    3. Assert 400 or 422.
+    1. POST a temporary agent so the workspace has >=2 agents
+       (default alone is not enough after built-in QA was removed).
+    2. GET /api/agents to get full list.
+    3. PUT /api/agents/order with only a subset of ids.
+    4. Assert 400 or 422.
+    5. Cleanup temporary agent.
 
     API endpoints:
+    - POST /api/agents
     - GET /api/agents
     - PUT /api/agents/order
+    - DELETE /api/agents/{agentId}
     """
-    list_resp = app_server.api_request(
-        "GET",
-        "/api/agents",
-        timeout=_AGENT_HTTP_TIMEOUT,
+    from tests.integration.helpers import (
+        create_agent,
+        delete_agent_quietly,
     )
-    assert list_resp.status_code == 200, app_server.logs_tail()
-    all_ids = [a["id"] for a in list_resp.json().get("agents", [])]
-    assert len(all_ids) >= 2, "need at least 2 agents for test"
 
-    partial = all_ids[:1]
-    resp = app_server.api_request(
-        "PUT",
-        "/api/agents/order",
-        json={"agent_ids": partial},
-        timeout=_AGENT_HTTP_TIMEOUT,
-    )
-    assert resp.status_code in (400, 422), (
-        f"expected 400/422, got {resp.status_code}: "
-        f"{app_server.logs_tail()}"
-    )
+    temp_id = "integ_ma_partial_order_01"
+    try:
+        create_agent(app_server, temp_id)
+        list_resp = app_server.api_request(
+            "GET",
+            "/api/agents",
+            timeout=_AGENT_HTTP_TIMEOUT,
+        )
+        assert list_resp.status_code == 200, app_server.logs_tail()
+        all_ids = [a["id"] for a in list_resp.json().get("agents", [])]
+        assert len(all_ids) >= 2, (
+            f"expected >=2 agents after create, got {all_ids}"
+        )
+
+        partial = all_ids[:1]
+        resp = app_server.api_request(
+            "PUT",
+            "/api/agents/order",
+            json={"agent_ids": partial},
+            timeout=_AGENT_HTTP_TIMEOUT,
+        )
+        assert resp.status_code in (400, 422), (
+            f"expected 400/422, got {resp.status_code}: "
+            f"{app_server.logs_tail()}"
+        )
+    finally:
+        delete_agent_quietly(app_server, temp_id)

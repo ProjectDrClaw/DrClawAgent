@@ -163,37 +163,55 @@ def test_api_agents_order_put_roundtrip(app_server) -> None:
     - Verify /api/agents/order persists a full agent order update.
 
     Test flow:
-    1. GET /api/agents to capture a stable baseline order.
-    2. PUT /api/agents/order with a reordered full agent ID list.
-    3. GET /api/agents and verify returned order matches the updated order.
-    4. PUT baseline order back for cleanup.
+    1. POST two temporary unpinned agents (default alone is not enough
+       after built-in QA was removed).
+    2. GET /api/agents to capture a stable baseline order.
+    3. PUT /api/agents/order with a reordered full agent ID list.
+    4. GET /api/agents and verify returned order matches the updated order.
+    5. Restore baseline order and delete temporary agents.
 
     API endpoints:
+    - POST /api/agents
     - GET /api/agents
     - PUT /api/agents/order
+    - DELETE /api/agents/{agentId}
     """
-    list_before = app_server.api_request("GET", "/api/agents")
-    assert list_before.status_code == 200, app_server.logs_tail()
-    agents_before = list_before.json().get("agents", [])
-    assert isinstance(agents_before, list)
-    assert len(agents_before) >= 2, "need at least two agents for reorder test"
-
-    baseline_ids = [item["id"] for item in agents_before]
-    regular_ids = [
-        item["id"]
-        for item in agents_before
-        if item["id"] != "default" and not item.get("pinned", False)
-    ]
-    if len(regular_ids) < 2:
-        pytest.skip("need at least two unpinned agents for reorder test")
-
-    first_regular = baseline_ids.index(regular_ids[0])
-    reordered_ids = list(baseline_ids)
-    reordered_ids[first_regular : first_regular + 2] = reversed(
-        reordered_ids[first_regular : first_regular + 2],
+    from tests.integration.helpers import (
+        create_agent,
+        delete_agent_quietly,
     )
 
+    temp_a = "integ_agents_order_a"
+    temp_b = "integ_agents_order_b"
+    created: list[str] = []
+    baseline_ids: list[str] | None = None
     try:
+        create_agent(app_server, temp_a)
+        created.append(temp_a)
+        create_agent(app_server, temp_b)
+        created.append(temp_b)
+
+        list_before = app_server.api_request("GET", "/api/agents")
+        assert list_before.status_code == 200, app_server.logs_tail()
+        agents_before = list_before.json().get("agents", [])
+        assert isinstance(agents_before, list)
+
+        baseline_ids = [item["id"] for item in agents_before]
+        regular_ids = [
+            item["id"]
+            for item in agents_before
+            if item["id"] != "default" and not item.get("pinned", False)
+        ]
+        assert len(regular_ids) >= 2, (
+            f"expected >=2 unpinned agents after create, got {regular_ids}"
+        )
+
+        first_regular = baseline_ids.index(regular_ids[0])
+        reordered_ids = list(baseline_ids)
+        reordered_ids[first_regular : first_regular + 2] = reversed(
+            reordered_ids[first_regular : first_regular + 2],
+        )
+
         put_resp = app_server.api_request(
             "PUT",
             "/api/agents/order",
@@ -210,12 +228,15 @@ def test_api_agents_order_put_roundtrip(app_server) -> None:
         ]
         assert after_ids == reordered_ids
     finally:
-        restore = app_server.api_request(
-            "PUT",
-            "/api/agents/order",
-            json={"agent_ids": baseline_ids},
-        )
-        assert restore.status_code == 200, app_server.logs_tail()
+        if baseline_ids is not None:
+            restore = app_server.api_request(
+                "PUT",
+                "/api/agents/order",
+                json={"agent_ids": baseline_ids},
+            )
+            assert restore.status_code == 200, app_server.logs_tail()
+        for agent_id in reversed(created):
+            delete_agent_quietly(app_server, agent_id)
 
 
 @pytest.mark.integration

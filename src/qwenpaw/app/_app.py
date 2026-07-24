@@ -301,8 +301,8 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
         try:
             # ---- Plugin System (phase 1: channel plugins) ----
             # Load channel-type plugins *before* agents start so that
-            # ChannelManager discovers them via get_channel_registry()
-            # on first creation — no reload needed afterwards.
+            # ChannelManager can discover them via list_channel_keys() /
+            # get_channel_class() on first creation — no reload needed.
             logger.debug("Initializing plugin system...")
 
             from ..config.utils import get_plugins_dir
